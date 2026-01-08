@@ -1,0 +1,25 @@
+{
+  "permissions": {
+    "allow": [
+      "Skill(speckit.specify)",
+      "Bash(git fetch:*)",
+      "mcp__voicemode__converse",
+      "Bash(ls:*)",
+      "Bash(rm:*)",
+      "Bash(ln:*)",
+      "Bash(.specify/scripts/bash/create-new-feature.sh:*)",
+      "Bash(cat:*)",
+      "Bash(chmod:*)",
+      "Bash(open http://localhost:8000)",
+      "Bash(.specify/scripts/bash/check-prerequisites.sh:*)",
+      "Bash(.specify/scripts/bash/setup-plan.sh:*)",
+      "WebSearch",
+      "Bash(.specify/scripts/bash/update-agent-context.sh:*)",
+      "Bash(wc:*)",
+      "Bash(bash:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(open /Users/shawn/proj/claude-code-dashboard/index.html)"
+    ]
+  }
+}

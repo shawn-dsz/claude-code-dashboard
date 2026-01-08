@@ -649,7 +649,7 @@
                 <div class="card expandable-card" id="modelDetailsCard">
                     <div class="card-header">
                         <div>
-                            <div class="card-label">MODEL USAGE</div>
+                            <div class="card-label" style="font-size: 14px; color: #ff6b47;">MODEL USAGE</div>
                             <div style="display: flex; gap: 16px; margin-top: 8px;">
                                 <span class="card-subtext dark" id="modelCount">0 models</span>
                                 <span class="card-subtext dark" id="totalCost">$0</span>
@@ -705,6 +705,64 @@
                     <div class="card-label">TOOL CALLS</div>
                     <div class="card-value" id="totalTools">0</div>
                     <div class="card-subtext">actions performed</div>
+                </div>
+            </div>
+
+            <!-- Glossary Section -->
+            <div class="card expandable-card" style="margin-top: 16px;">
+                <div class="card-header">
+                    <div>
+                        <div class="card-label" style="font-size: 14px; color: #ff6b47;">GLOSSARY</div>
+                        <div class="card-subtext dark">Understanding your stats</div>
+                    </div>
+                    <button class="expand-btn" aria-expanded="false">
+                        <span class="expand-text">Show Terms</span>
+                        <span class="expand-icon">▼</span>
+                    </button>
+                </div>
+                <div class="card-content collapsed">
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 16px; padding: 16px 0;">
+                        <div>
+                            <h4 style="color: #ff6b47; font-size: 13px; margin-bottom: 6px;">Session</h4>
+                            <p style="font-size: 12px; color: #666;">A coding session represents one interaction with Claude Code, from when you start until you close or switch contexts. Includes all messages and tool calls.</p>
+                        </div>
+                        <div>
+                            <h4 style="color: #ff6b47; font-size: 13px; margin-bottom: 6px;">Message</h4>
+                            <p style="font-size: 12px; color: #666;">Each message is an exchange between you and Claude - your prompts, questions, or commands and Claude's responses.</p>
+                        </div>
+                        <div>
+                            <h4 style="color: #ff6b47; font-size: 13px; margin-bottom: 6px;">Tokens</h4>
+                            <p style="font-size: 12px; color: #666;">Tokens are the basic unit of text processing. Roughly, 1 token ≈ 4 characters. Used for billing and model context limits.</p>
+                        </div>
+                        <div>
+                            <h4 style="color: #ff6b47; font-size: 13px; margin-bottom: 6px;">Input Tokens</h4>
+                            <p style="font-size: 12px; color: #666;">Tokens in your messages, prompts, and files you share. These are processed by Claude to understand your request.</p>
+                        </div>
+                        <div>
+                            <h4 style="color: #ff6b47; font-size: 13px; margin-bottom: 6px;">Output Tokens</h4>
+                            <p style="font-size: 12px; color: #666;">Tokens in Claude's responses. Generally cost more than input tokens.</p>
+                        </div>
+                        <div>
+                            <h4 style="color: #ff6b47; font-size: 13px; margin-bottom: 6px;">Cache Read</h4>
+                            <p style="font-size: 12px; color: #666;">When Claude reuses previously processed context from cache. Costs ~90% less than processing new tokens.</p>
+                        </div>
+                        <div>
+                            <h4 style="color: #ff6b47; font-size: 13px; margin-bottom: 6px;">Cache Write</h4>
+                            <p style="font-size: 12px; color: #666;">When new context is stored in cache for reuse. Slightly more expensive upfront but saves money on repeated exchanges.</p>
+                        </div>
+                        <div>
+                            <h4 style="color: #ff6b47; font-size: 13px; margin-bottom: 6px;">Cache Hit Rate</h4>
+                            <p style="font-size: 12px; color: #666;">Percentage of cache tokens that are read from cache vs. newly computed. Higher = more cost efficient.</p>
+                        </div>
+                        <div>
+                            <h4 style="color: #ff6b47; font-size: 13px; margin-bottom: 6px;">Tool Calls</h4>
+                            <p style="font-size: 12px; color: #666;">Actions Claude performs on your behalf - reading files, running commands, searching the web, etc.</p>
+                        </div>
+                        <div>
+                            <h4 style="color: #ff6b47; font-size: 13px; margin-bottom: 6px;">Streak</h4>
+                            <p style="font-size: 12px; color: #666;">Consecutive days where you had at least one session. Shows consistency in your coding workflow.</p>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -908,14 +966,18 @@
             heatmap.innerHTML = '';
 
             const startDate = new Date(activity[0]?.date || new Date());
+            // Get the first day of the week (Sunday) for the start date
+            const startDay = startDate.getDay();
+            const firstSunday = new Date(startDate);
+            firstSunday.setDate(startDate.getDate() - startDay);
 
             for (let week = 0; week < 52; week++) {
                 for (let day = 0; day < 7; day++) {
                     const cell = document.createElement('div');
                     cell.className = 'heatmap-cell';
 
-                    const cellDate = new Date(startDate);
-                    cellDate.setDate(startDate.getDate() + (week * 7) + day);
+                    const cellDate = new Date(firstSunday);
+                    cellDate.setDate(firstSunday.getDate() + (week * 7) + day);
                     const dateStr = cellDate.toISOString().split('T')[0];
 
                     const dayData = activity.find(d => d.date === dateStr);
@@ -925,10 +987,13 @@
                         const level = Math.ceil((dayData.messageCount / maxMsg) * 5);
                         cell.classList.add(`level-${Math.min(level, 5)}`);
                         cell.dataset.date = dateStr;
+                        cell.title = `${dateStr}: ${dayData.messageCount} messages`;
 
                         // Add event listeners for custom tooltip
                         cell.addEventListener('mouseenter', (e) => showHeatmapTooltip(e, dateStr));
                         cell.addEventListener('mouseleave', hideHeatmapTooltip);
+                    } else {
+                        cell.title = dateStr;
                     }
 
                     heatmap.appendChild(cell);
@@ -1263,10 +1328,8 @@
                 data: {
                     labels: labels,
                     datasets: [{
-                        data: periods.map(p => ({
-                            x: p.tokens,
-                            model: p.model
-                        })),
+                        label: 'Tokens',
+                        data: periods.map(p => p.tokens),
                         backgroundColor: periods.map(p => modelColors[p.model] || modelColors['default']),
                         borderColor: periods.map(p => modelColors[p.model] || modelColors['default']),
                         borderWidth: 1,
@@ -1294,10 +1357,7 @@
                                     const period = periods[items[0].dataIndex];
                                     return `${DashboardUtils.formatModelName(period.model)}`;
                                 },
-                                label: (item) => {
-                                    const period = periods[item.dataIndex];
-                                    return `${DashboardUtils.formatTokens(period.raw.x)} tokens`;
-                                }
+                                label: (item) => `${DashboardUtils.formatTokens(item.raw)} tokens`
                             }
                         }
                     },
@@ -1310,7 +1370,11 @@
                             }
                         },
                         y: {
-                            grid: { display: false }
+                            grid: { display: false },
+                            ticks: {
+                                color: colors.textSecondary,
+                                font: { size: 11 }
+                            }
                         }
                     }
                 }

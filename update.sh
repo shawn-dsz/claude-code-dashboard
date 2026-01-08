@@ -18,8 +18,16 @@ if [ ! -f "$SOURCE_FILE" ]; then
     exit 1
 fi
 
-# Copy the file
-cp "$SOURCE_FILE" "$DEST_FILE"
+# Check if destination is already a symlink to source
+if [ -L "$DEST_FILE" ] && [ "$(readlink "$DEST_FILE")" = "$SOURCE_FILE" ]; then
+    echo "📌 Data file is already symlinked to source - no update needed."
+elif [ "$SOURCE_FILE" -ef "$DEST_FILE" ] 2>/dev/null; then
+    echo "📌 Data file is already up to date."
+else
+    # Copy the file (or update symlink)
+    cp "$SOURCE_FILE" "$DEST_FILE"
+    echo "📋 Data file updated."
+fi
 
 echo "✅ Data updated successfully!"
 echo ""

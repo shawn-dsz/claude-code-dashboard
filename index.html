@@ -6,6 +6,42 @@
     <title>Claude Code Wrapped 2025</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
+        :root {
+            /* Light theme (default) */
+            --bg-primary: #f8f9fa;
+            --bg-card: #ffffff;
+            --bg-tooltip: #ffffff;
+            --text-primary: #333333;
+            --text-secondary: #666666;
+            --text-muted: #999999;
+            --accent: #ff6b47;
+            --accent-light: #ff9f87;
+            --border: #f0f0f0;
+            --border-subtle: #e0e0e0;
+            --grid: #f0f0f0;
+            --shadow: rgba(0, 0, 0, 0.1);
+            --shadow-tooltip: rgba(0, 0, 0, 0.15);
+            --overlay: rgba(0, 0, 0, 0.5);
+        }
+
+        [data-theme="dark"] {
+            /* Dark theme */
+            --bg-primary: #000000;
+            --bg-card: #1E1E1E;
+            --bg-tooltip: #1E1E1E;
+            --text-primary: #ffffff;
+            --text-secondary: #888888;
+            --text-muted: #666666;
+            --accent: #FF5722;
+            --accent-light: #FF8A65;
+            --border: #333333;
+            --border-subtle: #444444;
+            --grid: #333333;
+            --shadow: rgba(0, 0, 0, 0.3);
+            --shadow-tooltip: rgba(0, 0, 0, 0.4);
+            --overlay: rgba(0, 0, 0, 0.7);
+        }
+
         * {
             margin: 0;
             padding: 0;
@@ -14,9 +50,10 @@
 
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-            background: #f8f9fa;
+            background: var(--bg-primary);
             min-height: 100vh;
             padding: 40px 20px;
+            transition: background 0.3s ease;
         }
 
         .container {
@@ -27,6 +64,7 @@
         .header {
             text-align: center;
             margin-bottom: 40px;
+            position: relative;
         }
 
         .header-icon {
@@ -36,12 +74,40 @@
 
         h1 {
             font-size: 2.5em;
-            color: #333;
+            color: var(--text-primary);
             font-weight: 600;
         }
 
         h1 .wrapped {
-            color: #ff6b47;
+            color: var(--accent);
+        }
+
+        /* Theme toggle button */
+        .theme-toggle {
+            position: absolute;
+            top: 0;
+            right: 0;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 50%;
+            width: 44px;
+            height: 44px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 20px;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 8px var(--shadow);
+        }
+
+        .theme-toggle:hover {
+            transform: scale(1.1);
+            box-shadow: 0 4px 12px var(--shadow);
+        }
+
+        .theme-toggle:active {
+            transform: scale(0.95);
         }
 
         .grid {
@@ -64,10 +130,11 @@
         }
 
         .card {
-            background: white;
+            background: var(--bg-card);
             border-radius: 12px;
             padding: 20px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            box-shadow: 0 1px 3px var(--shadow);
+            transition: background 0.3s ease;
         }
 
         .expandable-card .card-header {
@@ -80,7 +147,7 @@
         .expand-btn {
             background: none;
             border: none;
-            color: #ff6b47;
+            color: var(--accent);
             cursor: pointer;
             font-weight: 600;
             font-size: 12px;
@@ -107,28 +174,28 @@
             font-size: 11px;
             font-weight: 600;
             letter-spacing: 1px;
-            color: #666;
+            color: var(--text-secondary);
             margin-bottom: 12px;
         }
 
         .card-value {
             font-size: 32px;
             font-weight: 700;
-            color: #333;
+            color: var(--text-primary);
             margin-bottom: 4px;
         }
 
         .card-value.accent {
-            color: #ff6b47;
+            color: var(--accent);
         }
 
         .card-subtext {
             font-size: 14px;
-            color: #999;
+            color: var(--text-muted);
         }
 
         .card-subtext.dark {
-            color: #666;
+            color: var(--text-secondary);
         }
 
         /* Heatmap */
@@ -141,7 +208,7 @@
 
         .heatmap-cell {
             aspect-ratio: 1;
-            background: #f0f0f0;
+            background: var(--grid);
             border-radius: 2px;
             transition: transform 0.2s, box-shadow 0.2s;
         }
@@ -153,7 +220,7 @@
         }
 
         .heatmap-cell.active {
-            background: #ff6b47;
+            background: var(--accent);
             opacity: 0.3;
         }
 
@@ -168,17 +235,17 @@
             justify-content: space-between;
             margin-top: 8px;
             font-size: 11px;
-            color: #999;
+            color: var(--text-muted);
         }
 
         /* Heatmap Tooltip */
         .heatmap-tooltip {
             position: fixed;
-            background: #ffffff;
-            border: 1px solid #f0f0f0;
+            background: var(--bg-tooltip);
+            border: 1px solid var(--border);
             border-radius: 8px;
             padding: 12px 16px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            box-shadow: 0 4px 12px var(--shadow-tooltip);
             pointer-events: none;
             opacity: 0;
             transform: translateY(-5px);
@@ -195,10 +262,10 @@
         .tooltip-date {
             font-size: 13px;
             font-weight: 600;
-            color: #333;
+            color: var(--text-primary);
             margin-bottom: 10px;
             padding-bottom: 8px;
-            border-bottom: 1px solid #f0f0f0;
+            border-bottom: 1px solid var(--border);
         }
 
         .tooltip-stats {
@@ -215,19 +282,19 @@
 
         .stat-label {
             font-size: 12px;
-            color: #666;
+            color: var(--text-secondary);
         }
 
         .stat-value {
             font-size: 12px;
             font-weight: 600;
-            color: #ff6b47;
+            color: var(--accent);
         }
 
-        .stat-value.messages { color: #ff6b47; }
-        .stat-value.sessions { color: #666; }
-        .stat-value.tools { color: #ff9f87; }
-        .stat-value.tokens { color: #ff6b47; }
+        .stat-value.messages { color: var(--accent); }
+        .stat-value.sessions { color: var(--text-secondary); }
+        .stat-value.tools { color: var(--accent-light); }
+        .stat-value.tokens { color: var(--accent); }
 
         /* Charts */
         .chart-container {
@@ -236,22 +303,23 @@
         }
 
         .chart-card {
-            background: white;
+            background: var(--bg-card);
             border-radius: 12px;
             padding: 20px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            box-shadow: 0 1px 3px var(--shadow);
+            transition: background 0.3s ease;
         }
 
         .chart-title {
             font-size: 14px;
             font-weight: 600;
-            color: #333;
+            color: var(--text-primary);
             margin-bottom: 16px;
         }
 
         /* Progress bar */
         .progress-bar {
-            background: #f0f0f0;
+            background: var(--grid);
             height: 8px;
             border-radius: 4px;
             overflow: hidden;
@@ -260,7 +328,7 @@
 
         .progress-fill {
             height: 100%;
-            background: #ff6b47;
+            background: var(--accent);
             border-radius: 4px;
             transition: width 1s ease-out;
         }
@@ -273,11 +341,11 @@
         }
 
         .metrics-row span:first-child {
-            color: #666;
+            color: var(--text-secondary);
         }
 
         .metrics-row span:last-child {
-            color: #333;
+            color: var(--text-primary);
             font-weight: 600;
         }
 
@@ -295,13 +363,13 @@
         .token-bar-label {
             width: 100px;
             font-size: 12px;
-            color: #666;
+            color: var(--text-secondary);
         }
 
         .token-bar-track {
             flex: 1;
             height: 8px;
-            background: #f0f0f0;
+            background: var(--grid);
             border-radius: 4px;
             overflow: hidden;
             margin: 0 8px;
@@ -313,23 +381,23 @@
             transition: width 0.8s ease-out;
         }
 
-        .token-bar-fill.input { background: #ff6b47; }
-        .token-bar-fill.output { background: #FF8A65; }
-        .token-bar-fill.cache-read { background: #ff9f87; }
-        .token-bar-fill.cache-write { background: #FFB88A; }
+        .token-bar-fill.input { background: var(--accent); }
+        .token-bar-fill.output { background: var(--accent-light); }
+        .token-bar-fill.cache-read { background: var(--accent-light); opacity: 0.7; }
+        .token-bar-fill.cache-write { background: var(--accent-light); opacity: 0.5; }
 
         .token-bar-value {
             width: 80px;
             text-align: right;
             font-size: 12px;
             font-weight: 600;
-            color: #333;
+            color: var(--text-primary);
         }
 
         /* Model item */
         .model-item {
             padding: 12px 0;
-            border-bottom: 1px solid #f0f0f0;
+            border-bottom: 1px solid var(--border);
         }
 
         .model-item:last-child {
@@ -345,11 +413,11 @@
 
         .model-name {
             font-weight: 600;
-            color: #333;
+            color: var(--text-primary);
         }
 
         .model-tokens {
-            color: #ff6b47;
+            color: var(--accent);
             font-weight: 600;
         }
 
@@ -370,17 +438,18 @@
         .modal-overlay {
             position: absolute;
             inset: 0;
-            background: rgba(0,0,0,0.5);
+            background: var(--overlay);
         }
 
         .modal-content {
             position: relative;
-            background: white;
+            background: var(--bg-card);
             border-radius: 12px;
             max-width: 800px;
             max-height: 80vh;
             overflow: auto;
             padding: 24px;
+            transition: background 0.3s ease;
         }
 
         .modal-header {
@@ -392,7 +461,7 @@
 
         .modal-header h2 {
             font-size: 20px;
-            color: #333;
+            color: var(--text-primary);
         }
 
         .close-btn {
@@ -400,7 +469,7 @@
             border: none;
             font-size: 24px;
             cursor: pointer;
-            color: #666;
+            color: var(--text-secondary);
         }
 
         /* Responsive */
@@ -466,6 +535,9 @@
             <div class="header">
                 <div class="header-icon">⭐</div>
                 <h1>claude code <span class="wrapped">wrapped 2025</span></h1>
+                <button class="theme-toggle" id="themeToggle" aria-label="Toggle theme" title="Toggle dark/light mode">
+                    <span class="theme-icon">🌙</span>
+                </button>
             </div>
 
             <!-- Row 1: Journey, Most Active Day, Weekly Activity -->
@@ -652,14 +724,56 @@
 
     <script src="dashboard-common.js"></script>
     <script>
-        const THEME = 'light';
-        const colors = DashboardUtils.COLORS[THEME];
+        // Theme management
+        let currentTheme = localStorage.getItem('theme') || 'light';
+        let colors = DashboardUtils.COLORS[currentTheme];
         let statsData = null;
         let charts = {};
         let dailyDataLookup = null;
 
+        // Apply theme to document
+        function applyTheme(theme) {
+            document.documentElement.setAttribute('data-theme', theme);
+            const themeIcon = document.querySelector('.theme-icon');
+            if (themeIcon) {
+                themeIcon.textContent = theme === 'dark' ? '☀️' : '🌙';
+            }
+            colors = DashboardUtils.COLORS[theme];
+
+            // Update chart colors
+            Object.values(charts).forEach(chart => {
+                if (chart && chart.options) {
+                    chart.options.plugins.legend.labels.color = colors.textSecondary;
+                    if (chart.options.scales.x) {
+                        chart.options.scales.x.grid.color = colors.grid;
+                        chart.options.scales.x.ticks.color = colors.textSecondary;
+                    }
+                    if (chart.options.scales.y) {
+                        chart.options.scales.y.grid.color = colors.grid;
+                        chart.options.scales.y.ticks.color = colors.textSecondary;
+                    }
+                    chart.update('none');
+                }
+            });
+        }
+
+        // Toggle theme
+        function toggleTheme() {
+            currentTheme = currentTheme === 'light' ? 'dark' : 'light';
+            localStorage.setItem('theme', currentTheme);
+            applyTheme(currentTheme);
+        }
+
         // Auto-load from data.json on page load
         window.addEventListener('DOMContentLoaded', async () => {
+            applyTheme(currentTheme);
+
+            // Set up theme toggle button
+            const themeToggle = document.getElementById('themeToggle');
+            if (themeToggle) {
+                themeToggle.addEventListener('click', toggleTheme);
+            }
+
             await loadFromFile();
             DashboardUtils.initExpandableCards();
         });

@@ -779,17 +779,15 @@
 
                 <div class="card expandable-card" id="modelDetailsCard">
                     <div class="card-header">
-                        <div>
-                            <div class="card-label-expandable">MODEL USAGE</div>
-                            <div style="display: flex; gap: 16px; margin-top: 8px;">
-                                <span class="card-subtext dark" id="modelCount">0 models</span>
-                                <span class="card-subtext dark" id="totalCost">$0</span>
-                            </div>
+                        <div class="card-label-expandable">MODEL USAGE</div>
+                        <div style="display: flex; align-items: center; gap: 16px;">
+                            <span class="card-subtext dark" id="modelCount">0 models</span>
+                            <span class="card-subtext dark" id="totalCost">$0</span>
+                            <button class="expand-btn" aria-expanded="false">
+                                <span class="expand-text">Show Details</span>
+                                <span class="expand-icon">▼</span>
+                            </button>
                         </div>
-                        <button class="expand-btn" aria-expanded="false">
-                            <span class="expand-text">Show Details</span>
-                            <span class="expand-icon">▼</span>
-                        </button>
                     </div>
                     <div class="card-content collapsed" id="modelDetailsContent">
                         <!-- Populated by JS -->

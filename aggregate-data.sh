@@ -1,11 +1,13 @@
 #!/bin/bash
 # Claude Code Dashboard Data Aggregation Script
-# Generates projects.json and sessions.json from ~/.claude/projects/
+# Generates projects.json and sessions.json from SQLite cache
 
 set -e
 
 PROJECTS_DIR="$HOME/.claude/projects"
 DEST_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+CACHE_DB="$DEST_DIR/.cache/sessions.db"
+CACHE_SCRIPT="$DEST_DIR/build-session-cache.js"
 
 echo "📊 Aggregating Claude Code data..."
 echo ""
@@ -17,93 +19,90 @@ if [ ! -d "$PROJECTS_DIR" ]; then
     exit 1
 fi
 
-# Generate projects.json
+# Check if Node.js is available
+if ! command -v node &> /dev/null; then
+    echo "❌ Error: Node.js not found"
+    echo "   Install with: brew install node"
+    exit 1
+fi
+
+# Build/update the session cache
+echo "🗄️  Building session cache..."
+node "$CACHE_SCRIPT" "$CACHE_DB"
+echo ""
+
+# Check if cache was created
+if [ ! -f "$CACHE_DB" ]; then
+    echo "❌ Error: Cache database not found at $CACHE_DB"
+    exit 1
+fi
+
+# Generate projects.json from cache
 echo "📁 Generating projects.json..."
 PROJECTS_OUTPUT="$DEST_DIR/projects.json"
 
-echo "[" > "$PROJECTS_OUTPUT"
+# Query cache for project stats
+sqlite3 -json "$CACHE_DB" "
+    SELECT
+        project_path as path,
+        COUNT(*) as sessionCount,
+        MAX(sessions.end_timestamp) as lastTimestamp
+    FROM files
+    LEFT JOIN sessions ON files.id = sessions.file_id
+    GROUP BY project_path
+    ORDER BY path
+" > "$PROJECTS_OUTPUT.tmp"
 
-first=true
-find "$PROJECTS_DIR" -maxdepth 1 -type d -not -name "$PROJECTS_DIR" | while read -r project_dir; do
-    project_name=$(basename "$project_dir")
-    session_files=$(find "$project_dir" -maxdepth 1 -name "*.jsonl" -type f 2>/dev/null)
-    session_count=$(echo "$session_files" | grep -c . || echo "0")
+# Convert SQLite JSON array to proper format (add brackets and handle empty)
+if [ -s "$PROJECTS_OUTPUT.tmp" ]; then
+    # File has content, use it as-is
+    mv "$PROJECTS_OUTPUT.tmp" "$PROJECTS_OUTPUT"
+else
+    # Empty result
+    echo "[]" > "$PROJECTS_OUTPUT"
+    rm -f "$PROJECTS_OUTPUT.tmp"
+fi
 
-    if [ "$session_count" -gt 0 ]; then
-        # Get last modified timestamp
-        last_timestamp=$(find "$project_dir" -maxdepth 1 -name "*.jsonl" -type f -printf '%T@\n' 2>/dev/null | sort -rn | head -1)
-
-        if [ "$first" = false ]; then
-            echo "," >> "$PROJECTS_OUTPUT"
-        fi
-        first=false
-
-        cat >> "$PROJECTS_OUTPUT" << EOF
-{
-  "path": "$project_name",
-  "sessionCount": $session_count,
-  "lastTimestamp": ${last_timestamp:-0}
-}
-EOF
-    fi
-done
-
-echo "]" >> "$PROJECTS_OUTPUT"
 echo "✅ projects.json generated"
 
-# Generate sessions.json (simplified index)
+# Generate sessions.json from cache (recent 100 sessions)
 echo ""
 echo "📝 Generating sessions.json..."
 SESSIONS_OUTPUT="$DEST_DIR/sessions.json"
 
-# Use jq for safer JSON parsing if available
-if command -v jq &> /dev/null; then
-    # Fast path with jq
-    find "$PROJECTS_DIR" -maxdepth 2 -name "*.jsonl" -type f -exec sh -c '
-        for file do
-            project=$(basename "$(dirname "$file")")
-            session_id=$(basename "$file" .jsonl)
-            first_line=$(head -1 "$file" 2>/dev/null)
-            if [ -n "$first_line" ]; then
-                timestamp=$(echo "$first_line" | jq -r "select(.timestamp != null) | .timestamp" 2>/dev/null | head -1)
-                model=$(echo "$first_line" | jq -r "select(.model != null) | .model" 2>/dev/null | head -1)
-                message_count=$(wc -l < "$file" 2>/dev/null || echo "0")
-                echo "{\"sessionId\":\"$session_id\",\"project\":\"$project\",\"timestamp\":\"$timestamp\",\"model\":\"$model\",\"messageCount\":$message_count}"
-            fi
-        done
-    ' sh {} + | jq -s '.' > "$SESSIONS_OUTPUT"
+sqlite3 -json "$CACHE_DB" "
+    SELECT
+        s.session_id as sessionId,
+        f.project_path as project,
+        s.start_timestamp as startTime,
+        s.end_timestamp as endTime,
+        s.message_count as messageCount,
+        s.total_input_tokens + s.total_output_tokens + s.total_cache_read_tokens + s.total_cache_write_tokens as totalTokens,
+        s.git_branch as gitBranch
+    FROM sessions s
+    JOIN files f ON s.file_id = f.id
+    WHERE s.start_timestamp IS NOT NULL
+    ORDER BY s.start_timestamp DESC
+    LIMIT 100
+" > "$SESSIONS_OUTPUT.tmp"
+
+# Handle empty result
+if [ -s "$SESSIONS_OUTPUT.tmp" ]; then
+    mv "$SESSIONS_OUTPUT.tmp" "$SESSIONS_OUTPUT"
 else
-    # Fallback without jq
-    echo "[" > "$SESSIONS_OUTPUT"
-    first=true
-    find "$PROJECTS_DIR" -maxdepth 2 -name "*.jsonl" -type f | while read -r session_file; do
-        project=$(basename "$(dirname "$session_file")")
-        session_id=$(basename "$session_file" .jsonl)
-
-        # Get first line for metadata
-        first_line=$(head -1 "$session_file" 2>/dev/null)
-        message_count=$(wc -l < "$session_file" 2>/dev/null | tr -d ' ')
-
-        if [ "$first" = false ]; then
-            echo "," >> "$SESSIONS_OUTPUT"
-        fi
-        first=false
-
-        cat >> "$SESSIONS_OUTPUT" << EOF
-{
-  "sessionId": "$session_id",
-  "project": "$project",
-  "timestamp": null,
-  "model": null,
-  "messageCount": ${message_count:-0}
-}
-EOF
-    done
-    echo "]" >> "$SESSIONS_OUTPUT"
+    echo "[]" > "$SESSIONS_OUTPUT"
+    rm -f "$SESSIONS_OUTPUT.tmp"
 fi
 
 echo "✅ sessions.json generated"
+
+# Print summary
 echo ""
 echo "🎉 Data aggregation complete!"
 echo "   📁 $PROJECTS_OUTPUT"
 echo "   📁 $SESSIONS_OUTPUT"
+
+# Show cache stats
+TOTAL_SESSIONS=$(sqlite3 "$CACHE_DB" "SELECT COUNT(*) FROM sessions" 2>/dev/null || echo "0")
+TOTAL_PROJECTS=$(sqlite3 "$CACHE_DB" "SELECT COUNT(DISTINCT project_path) FROM files" 2>/dev/null || echo "0")
+echo "   📊 Cache: $TOTAL_SESSIONS sessions across $TOTAL_PROJECTS projects"

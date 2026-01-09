@@ -1,0 +1,8 @@
+# Node modules
+node_modules/
+
+# Session cache database
+.cache/
+
+# OS files
+.DS_Store

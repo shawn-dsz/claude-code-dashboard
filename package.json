@@ -1,0 +1,12 @@
+{
+  "name": "claude-code-dashboard",
+  "version": "1.0.0",
+  "description": "Claude Code usage analytics dashboard with session caching",
+  "main": "build-session-cache.js",
+  "scripts": {
+    "build-cache": "node build-session-cache.js .cache/sessions.db"
+  },
+  "dependencies": {
+    "sql.js": "^1.10.3"
+  }
+}

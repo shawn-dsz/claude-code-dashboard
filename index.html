@@ -178,6 +178,25 @@
             margin-bottom: 12px;
         }
 
+        .card-label-expandable {
+            font-size: 14px;
+            font-weight: 600;
+            letter-spacing: 1px;
+            color: var(--accent);
+            margin-bottom: 12px;
+        }
+
+        .glossary-term {
+            color: var(--accent);
+            font-size: 13px;
+            margin-bottom: 6px;
+        }
+
+        .glossary-def {
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
         .card-value {
             font-size: 32px;
             font-weight: 700;
@@ -199,14 +218,36 @@
         }
 
         /* Heatmap */
-        .heatmap {
-            display: grid;
-            grid-template-columns: repeat(52, 1fr);
-            gap: 3px;
+        .heatmap-container {
+            display: flex;
+            gap: 8px;
             margin-top: 12px;
         }
 
+        .heatmap-day-labels {
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 0 4px;
+        }
+
+        .heatmap-day-labels span {
+            font-size: 10px;
+            color: var(--text-muted);
+            height: 11px;
+            line-height: 11px;
+        }
+
+        .heatmap {
+            display: grid;
+            grid-template-rows: repeat(7, 1fr);
+            grid-auto-flow: column;
+            gap: 3px;
+            flex: 1;
+        }
+
         .heatmap-cell {
+            width: 12px;
             aspect-ratio: 1;
             background: var(--grid);
             border-radius: 2px;
@@ -234,7 +275,7 @@
             display: flex;
             justify-content: space-between;
             margin-top: 8px;
-            font-size: 11px;
+            font-size: 10px;
             color: var(--text-muted);
         }
 
@@ -521,6 +562,83 @@
         .delay-1 { animation-delay: 0.1s; }
         .delay-2 { animation-delay: 0.2s; }
         .delay-3 { animation-delay: 0.3s; }
+
+        /* Suggestions section */
+        .suggestions-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 16px;
+            margin-top: 16px;
+        }
+
+        .suggestion-card {
+            background: var(--bg-card);
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 1px 3px var(--shadow);
+            transition: transform 0.2s, box-shadow 0.2s;
+            border-left: 4px solid var(--accent);
+        }
+
+        .suggestion-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px var(--shadow);
+        }
+
+        .suggestion-icon {
+            font-size: 24px;
+            margin-bottom: 12px;
+        }
+
+        .suggestion-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 8px;
+        }
+
+        .suggestion-desc {
+            font-size: 13px;
+            color: var(--text-secondary);
+            line-height: 1.5;
+        }
+
+        .suggestion-impact {
+            display: inline-block;
+            margin-top: 12px;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .suggestion-impact.high {
+            background: rgba(76, 175, 80, 0.15);
+            color: #4CAF50;
+        }
+
+        .suggestion-impact.medium {
+            background: rgba(255, 193, 7, 0.15);
+            color: #FFC107;
+        }
+
+        .suggestion-impact.low {
+            background: rgba(158, 158, 158, 0.15);
+            color: #9E9E9E;
+        }
+
+        .suggestion-type {
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            font-size: 11px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: 600;
+        }
     </style>
 </head>
 <body>
@@ -563,7 +681,12 @@
             <!-- Row 2: Activity Heatmap -->
             <div class="card" style="margin-bottom: 16px;">
                 <div class="card-label">ACTIVITY HEATMAP</div>
-                <div class="heatmap" id="heatmap"></div>
+                <div class="heatmap-container">
+                    <div class="heatmap-day-labels">
+                        <span></span><span style="font-size: 9px;">Mon</span><span style="font-size: 9px;">Wed</span><span style="font-size: 9px;">Fri</span>
+                    </div>
+                    <div class="heatmap" id="heatmap"></div>
+                </div>
                 <div class="heatmap-labels">
                     <span>Jan</span><span>Feb</span><span>Mar</span><span>Apr</span><span>May</span>
                     <span>Jun</span><span>Jul</span><span>Aug</span><span>Sep</span><span>Oct</span>
@@ -625,8 +748,16 @@
                 </div>
             </div>
 
+            <!-- Row 3.5: AI-Powered Suggestions -->
+            <div class="card" style="margin-top: 16px;">
+                <div class="card-label">WAYS TO GET MORE FROM CLAUDE CODE</div>
+                <div class="suggestions-grid" id="suggestionsGrid">
+                    <!-- Suggestions populated by JS -->
+                </div>
+            </div>
+
             <!-- Row 4: Cache Efficiency -->
-            <div class="grid" style="grid-template-columns: 1fr 1fr;">
+            <div class="grid" style="grid-template-columns: 1fr 1fr; margin-top: 16px;">
                 <div class="card">
                     <div class="card-label">CACHE EFFICIENCY</div>
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
@@ -649,7 +780,7 @@
                 <div class="card expandable-card" id="modelDetailsCard">
                     <div class="card-header">
                         <div>
-                            <div class="card-label" style="font-size: 14px; color: #ff6b47;">MODEL USAGE</div>
+                            <div class="card-label-expandable">MODEL USAGE</div>
                             <div style="display: flex; gap: 16px; margin-top: 8px;">
                                 <span class="card-subtext dark" id="modelCount">0 models</span>
                                 <span class="card-subtext dark" id="totalCost">$0</span>
@@ -712,7 +843,7 @@
             <div class="card expandable-card" style="margin-top: 16px;">
                 <div class="card-header">
                     <div>
-                        <div class="card-label" style="font-size: 14px; color: #ff6b47;">GLOSSARY</div>
+                        <div class="card-label-expandable">GLOSSARY</div>
                         <div class="card-subtext dark">Understanding your stats</div>
                     </div>
                     <button class="expand-btn" aria-expanded="false">
@@ -723,44 +854,44 @@
                 <div class="card-content collapsed">
                     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 16px; padding: 16px 0;">
                         <div>
-                            <h4 style="color: #ff6b47; font-size: 13px; margin-bottom: 6px;">Session</h4>
-                            <p style="font-size: 12px; color: #666;">A coding session represents one interaction with Claude Code, from when you start until you close or switch contexts. Includes all messages and tool calls.</p>
+                            <h4 class="glossary-term">Session</h4>
+                            <p class="glossary-def">A coding session represents one interaction with Claude Code, from when you start until you close or switch contexts. Includes all messages and tool calls.</p>
                         </div>
                         <div>
-                            <h4 style="color: #ff6b47; font-size: 13px; margin-bottom: 6px;">Message</h4>
-                            <p style="font-size: 12px; color: #666;">Each message is an exchange between you and Claude - your prompts, questions, or commands and Claude's responses.</p>
+                            <h4 class="glossary-term">Message</h4>
+                            <p class="glossary-def">Each message is an exchange between you and Claude - your prompts, questions, or commands and Claude's responses.</p>
                         </div>
                         <div>
-                            <h4 style="color: #ff6b47; font-size: 13px; margin-bottom: 6px;">Tokens</h4>
-                            <p style="font-size: 12px; color: #666;">Tokens are the basic unit of text processing. Roughly, 1 token ≈ 4 characters. Used for billing and model context limits.</p>
+                            <h4 class="glossary-term">Tokens</h4>
+                            <p class="glossary-def">Tokens are the basic unit of text processing. Roughly, 1 token ≈ 4 characters. Used for billing and model context limits.</p>
                         </div>
                         <div>
-                            <h4 style="color: #ff6b47; font-size: 13px; margin-bottom: 6px;">Input Tokens</h4>
-                            <p style="font-size: 12px; color: #666;">Tokens in your messages, prompts, and files you share. These are processed by Claude to understand your request.</p>
+                            <h4 class="glossary-term">Input Tokens</h4>
+                            <p class="glossary-def">Tokens in your messages, prompts, and files you share. These are processed by Claude to understand your request.</p>
                         </div>
                         <div>
-                            <h4 style="color: #ff6b47; font-size: 13px; margin-bottom: 6px;">Output Tokens</h4>
-                            <p style="font-size: 12px; color: #666;">Tokens in Claude's responses. Generally cost more than input tokens.</p>
+                            <h4 class="glossary-term">Output Tokens</h4>
+                            <p class="glossary-def">Tokens in Claude's responses. Generally cost more than input tokens.</p>
                         </div>
                         <div>
-                            <h4 style="color: #ff6b47; font-size: 13px; margin-bottom: 6px;">Cache Read</h4>
-                            <p style="font-size: 12px; color: #666;">When Claude reuses previously processed context from cache. Costs ~90% less than processing new tokens.</p>
+                            <h4 class="glossary-term">Cache Read</h4>
+                            <p class="glossary-def">When Claude reuses previously processed context from cache. Costs ~90% less than processing new tokens.</p>
                         </div>
                         <div>
-                            <h4 style="color: #ff6b47; font-size: 13px; margin-bottom: 6px;">Cache Write</h4>
-                            <p style="font-size: 12px; color: #666;">When new context is stored in cache for reuse. Slightly more expensive upfront but saves money on repeated exchanges.</p>
+                            <h4 class="glossary-term">Cache Write</h4>
+                            <p class="glossary-def">When new context is stored in cache for reuse. Slightly more expensive upfront but saves money on repeated exchanges.</p>
                         </div>
                         <div>
-                            <h4 style="color: #ff6b47; font-size: 13px; margin-bottom: 6px;">Cache Hit Rate</h4>
-                            <p style="font-size: 12px; color: #666;">Percentage of cache tokens that are read from cache vs. newly computed. Higher = more cost efficient.</p>
+                            <h4 class="glossary-term">Cache Hit Rate</h4>
+                            <p class="glossary-def">Percentage of cache tokens that are read from cache vs. newly computed. Higher = more cost efficient.</p>
                         </div>
                         <div>
-                            <h4 style="color: #ff6b47; font-size: 13px; margin-bottom: 6px;">Tool Calls</h4>
-                            <p style="font-size: 12px; color: #666;">Actions Claude performs on your behalf - reading files, running commands, searching the web, etc.</p>
+                            <h4 class="glossary-term">Tool Calls</h4>
+                            <p class="glossary-def">Actions Claude performs on your behalf - reading files, running commands, searching the web, etc.</p>
                         </div>
                         <div>
-                            <h4 style="color: #ff6b47; font-size: 13px; margin-bottom: 6px;">Streak</h4>
-                            <p style="font-size: 12px; color: #666;">Consecutive days where you had at least one session. Shows consistency in your coding workflow.</p>
+                            <h4 class="glossary-term">Streak</h4>
+                            <p class="glossary-def">Consecutive days where you had at least one session. Shows consistency in your coding workflow.</p>
                         </div>
                     </div>
                 </div>
@@ -919,6 +1050,9 @@
 
             // Model details
             renderModelDetails();
+
+            // Suggestions
+            renderSuggestions();
 
             // Stats
             animateValue('totalSessions', totalSessions.toLocaleString());
@@ -1454,6 +1588,224 @@
                     <span class="token-bar-value">${DashboardUtils.formatTokens(value)}</span>
                 </div>
             `;
+        }
+
+        function renderSuggestions() {
+            if (!statsData || !statsData.dailyActivity) return;
+
+            const suggestions = generateSuggestions(statsData);
+            const grid = document.getElementById('suggestionsGrid');
+            grid.innerHTML = '';
+
+            suggestions.forEach((suggestion, index) => {
+                const card = document.createElement('div');
+                card.className = 'suggestion-card';
+                card.style.position = 'relative';
+                card.style.animationDelay = `${index * 0.1}s`;
+                card.innerHTML = `
+                    <span class="suggestion-type">${suggestion.type}</span>
+                    <div class="suggestion-icon">${suggestion.icon}</div>
+                    <div class="suggestion-title">${suggestion.title}</div>
+                    <div class="suggestion-desc">${suggestion.description}</div>
+                    <span class="suggestion-impact ${suggestion.impact}">${suggestion.impact} impact</span>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        function generateSuggestions(data) {
+            const suggestions = [];
+            const activity = data.dailyActivity || [];
+            const modelUsage = data.modelUsage || {};
+
+            // Calculate key metrics
+            const totalMessages = activity.reduce((sum, day) => sum + day.messageCount, 0);
+            const totalSessions = activity.reduce((sum, day) => sum + day.sessionCount, 0);
+            const totalToolCalls = activity.reduce((sum, day) => sum + day.toolCallCount, 0);
+            const avgPerSession = totalSessions > 0 ? Math.round(totalMessages / totalSessions) : 0;
+            const streak = DashboardUtils.calculateStreak(activity);
+            const cacheStats = DashboardUtils.calculateCacheStats(modelUsage);
+
+            // Day of week analysis
+            const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+            const dayActivity = {};
+            activity.forEach(d => {
+                const dayName = dayNames[new Date(d.date).getDay()];
+                dayActivity[dayName] = (dayActivity[dayName] || 0) + d.messageCount;
+            });
+            const mostActiveDay = Object.entries(dayActivity).sort((a, b) => b[1] - a[1])[0];
+
+            // Tool usage ratio
+            const toolRatio = totalMessages > 0 ? (totalToolCalls / totalMessages) : 0;
+
+            // Model diversity
+            const modelCount = Object.keys(modelUsage).length;
+
+            // === SUGGESTION: Cache Optimization ===
+            if (cacheStats.hitRate < 50) {
+                suggestions.push({
+                    icon: '💾',
+                    title: 'Boost Your Cache Hit Rate',
+                    description: `Your cache hit rate is ${cacheStats.hitRate.toFixed(1)}%. Reuse context across sessions by working in focused conversations. This can save up to 90% on costs for repeated exchanges.`,
+                    type: 'Cost',
+                    impact: 'high'
+                });
+            } else if (cacheStats.hitRate >= 70) {
+                suggestions.push({
+                    icon: '✨',
+                    title: 'Excellent Cache Efficiency!',
+                    description: `Your ${cacheStats.hitRate.toFixed(1)}% cache hit rate shows you're efficiently reusing context. Keep maintaining conversations and using project-specific contexts to maximize savings.`,
+                    type: 'Achievement',
+                    impact: 'low'
+                });
+            }
+
+            // === SUGGESTION: Productivity Pattern ===
+            if (mostActiveDay) {
+                suggestions.push({
+                    icon: '📅',
+                    title: `Schedule Deep Work on ${mostActiveDay[0]}s`,
+                    description: `You're most active on ${mostActiveDay[0]}s with ${DashboardUtils.formatNumber(mostActiveDay[1])} messages. Plan your most challenging coding tasks for this day to align with your peak productivity.`,
+                    type: 'Productivity',
+                    impact: 'medium'
+                });
+            }
+
+            // === SUGGESTION: Tool Usage ===
+            if (toolRatio < 0.5) {
+                suggestions.push({
+                    icon: '🔧',
+                    title: 'Leverage More Tools',
+                    description: `You're using tools in ${Math.round(toolRatio * 100)}% of exchanges. Try using file operations, web search, and bash commands more to let Claude do the heavy lifting.`,
+                    type: 'Workflow',
+                    impact: 'medium'
+                });
+            } else if (toolRatio > 1.5) {
+                suggestions.push({
+                    icon: '⚡',
+                    title: 'Power Tool User!',
+                    description: `You average ${Math.round(toolRatio * 10) / 10} tool calls per message - you're maximizing Claude's capabilities. Consider creating custom tool workflows for repetitive tasks.`,
+                    type: 'Achievement',
+                    impact: 'low'
+                });
+            }
+
+            // === SUGGESTION: Streak ===
+            if (streak >= 30) {
+                suggestions.push({
+                    icon: '🔥',
+                    title: `${streak}-Day Streak!`,
+                    description: `Incredible consistency! You've used Claude Code every day for ${streak} days. This regular habit helps maintain context and improves the quality of assistance.`,
+                    type: 'Achievement',
+                    impact: 'low'
+                });
+            } else if (streak >= 7) {
+                suggestions.push({
+                    icon: '📈',
+                    title: 'Building Momentum',
+                    description: `${streak} days in a row! You're developing a consistent coding habit. Try to maintain at least one session per day to keep momentum going.`,
+                    type: 'Productivity',
+                    impact: 'medium'
+                });
+            } else if (streak === 0) {
+                suggestions.push({
+                    icon: '🎯',
+                    title: 'Start a New Streak',
+                    description: 'Daily usage helps maintain context and improves response quality. Try to have at least one brief coding session each day.',
+                    type: 'Productivity',
+                    impact: 'low'
+                });
+            }
+
+            // === SUGGESTION: Session Length ===
+            if (avgPerSession > 100) {
+                suggestions.push({
+                    icon: '📊',
+                    title: 'Break Up Long Sessions',
+                    description: `Your sessions average ${avgPerSession} messages. Consider breaking complex tasks into multiple focused sessions to improve context retention and token efficiency.`,
+                    type: 'Workflow',
+                    impact: 'medium'
+                });
+            } else if (avgPerSession < 10) {
+                suggestions.push({
+                    icon: '💡',
+                    title: 'Deeper Conversations',
+                    description: `Your sessions average ${avgPerSession} messages. Try exploring topics more deeply before moving on - richer conversations lead to better solutions and learning.`,
+                    type: 'Learning',
+                    impact: 'low'
+                });
+            }
+
+            // === SUGGESTION: Model Strategy ===
+            const haikuUsage = modelUsage['claude-haiku-4-5-20251001'];
+            const sonnetUsage = modelUsage['claude-sonnet-4-5-20250929'];
+            const opusUsage = modelUsage['claude-opus-4-5-20251101'];
+
+            const haikuTokens = haikuUsage ? (haikuUsage.inputTokens || 0) + (haikuUsage.outputTokens || 0) : 0;
+            const sonnetTokens = sonnetUsage ? (sonnetUsage.inputTokens || 0) + (sonnetUsage.outputTokens || 0) : 0;
+            const opusTokens = opusUsage ? (opusUsage.inputTokens || 0) + (opusUsage.outputTokens || 0) : 0;
+
+            if (opusTokens > sonnetTokens * 2 && haikuTokens < opusTokens * 0.1) {
+                suggestions.push({
+                    icon: '💰',
+                    title: 'Consider Haiku for Quick Tasks',
+                    description: `You're heavily using Opus. For quick queries, simple edits, and documentation tasks, try Haiku - it's ~20x faster and ~95% cheaper.`,
+                    type: 'Cost',
+                    impact: 'high'
+                });
+            }
+
+            // === SUGGESTION: Activity Pattern ===
+            const recentActivity = activity.slice(-7);
+            const avgRecentMessages = recentActivity.reduce((sum, d) => sum + d.messageCount, 0) / Math.max(recentActivity.length, 1);
+            const totalDays = activity.length;
+            const allTimeAvg = totalMessages / Math.max(totalDays, 1);
+
+            if (avgRecentMessages > allTimeAvg * 1.5) {
+                suggestions.push({
+                    icon: '🚀',
+                    title: 'Productivity Spike!',
+                    description: `Your recent activity is ${Math.round((avgRecentMessages / allTimeAvg - 1) * 100)}% above your average. You're in a productive groove - consider tackling your most challenging projects now.`,
+                    type: 'Productivity',
+                    impact: 'medium'
+                });
+            } else if (avgRecentMessages < allTimeAvg * 0.5 && totalDays > 7) {
+                suggestions.push({
+                    icon: '🌱',
+                    title: 'Rebuild Your Momentum',
+                    description: `Your recent activity is below your usual pace. Consider setting a small daily goal or revisiting an interesting project to get back into your rhythm.`,
+                    type: 'Productivity',
+                    impact: 'low'
+                });
+            }
+
+            // === SUGGESTION: Project Diversity ===
+            if (modelCount >= 4) {
+                suggestions.push({
+                    icon: '🎨',
+                    title: 'Model Explorer',
+                    description: `You've used ${modelCount} different models. Each has strengths - Haiku for speed, Sonnet for balance, Opus for complexity. Keep experimenting to find the right tool for each task.`,
+                    type: 'Strategy',
+                    impact: 'medium'
+                });
+            }
+
+            // Ensure we have at least 3 suggestions
+            if (suggestions.length < 3) {
+                suggestions.push({
+                    icon: '📚',
+                    title: 'Explore New Features',
+                    description: 'Claude Code is regularly updated with new capabilities. Try using voice mode, MCP servers, or custom prompts to enhance your workflow.',
+                    type: 'Learning',
+                    impact: 'low'
+                });
+            }
+
+            // Return top 6 suggestions, prioritizing by impact
+            const impactOrder = { high: 0, medium: 1, low: 2 };
+            return suggestions
+                .sort((a, b) => impactOrder[a.impact] - impactOrder[b.impact])
+                .slice(0, 6);
         }
 
         function closeModal() {

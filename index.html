@@ -3,43 +3,126 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Claude Code Wrapped 2025</title>
+    <title>My Claude Activity</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root {
-            /* Light theme (default) */
-            --bg-primary: #f8f9fa;
-            --bg-card: #ffffff;
-            --bg-tooltip: #ffffff;
-            --text-primary: #333333;
-            --text-secondary: #666666;
-            --text-muted: #999999;
-            --accent: #ff6b47;
+            /* Light theme (default) - Elegant Data Storytelling */
+            /* Backgrounds */
+            --bg-primary: #FAFBFC;
+            --bg-secondary: #F5F6F8;
+            --bg-card: #FFFFFF;
+            --bg-elevated: #FFFFFF;
+            --bg-tooltip: #FFFFFF;
+
+            /* Text */
+            --text-primary: #1A1A2E;
+            --text-secondary: #5A5B6E;
+            --text-tertiary: #8A8B9E;
+            --text-muted: #8A8B9E;
+            --text-inverse: #FFFFFF;
+
+            /* Accents - Coral & Teal duotone */
+            --accent: #E8554E;
+            --accent-primary: #E8554E;
+            --accent-secondary: #3DB5B5;
+            --accent-tertiary: #FFA94D;
             --accent-light: #ff9f87;
-            --border: #f0f0f0;
-            --border-subtle: #e0e0e0;
+            --accent-primary-light: #FFE8E6;
+            --accent-secondary-light: #E6F7F7;
+            --accent-tertiary-light: #FFF3E6;
+
+            /* Borders */
+            --border: #E8E9ED;
+            --border-subtle: #E8E9ED;
+            --border-medium: #D8D9DD;
+            --border-strong: #B8B9BD;
             --grid: #f0f0f0;
-            --shadow: rgba(0, 0, 0, 0.1);
-            --shadow-tooltip: rgba(0, 0, 0, 0.15);
+
+            /* Shadows - Layered depth */
+            --shadow: rgba(26, 26, 46, 0.08);
+            --shadow-xs: 0 1px 2px rgba(26, 26, 46, 0.04);
+            --shadow-sm: 0 2px 4px rgba(26, 26, 46, 0.06);
+            --shadow-md: 0 4px 12px rgba(26, 26, 46, 0.08);
+            --shadow-lg: 0 8px 24px rgba(26, 26, 46, 0.12);
+            --shadow-xl: 0 16px 48px rgba(26, 26, 46, 0.16);
+            --shadow-tooltip: rgba(26, 26, 46, 0.15);
             --overlay: rgba(0, 0, 0, 0.5);
+
+            /* Gradients */
+            --gradient-warm: linear-gradient(135deg, #E8554E 0%, #FF7B67 100%);
+            --gradient-cool: linear-gradient(135deg, #3DB5B5 0%, #5DD3D3 100%);
+            --gradient-hero: linear-gradient(135deg, #E8554E 0%, #3DB5B5 100%);
+
+            /* Spacing */
+            --space-1: 0.25rem;
+            --space-2: 0.5rem;
+            --space-3: 0.75rem;
+            --space-4: 1rem;
+            --space-5: 1.25rem;
+            --space-6: 1.5rem;
+            --space-8: 2rem;
+
+            /* Border radius */
+            --radius-sm: 6px;
+            --radius-md: 10px;
+            --radius-lg: 16px;
+            --radius-xl: 24px;
+            --radius-full: 9999px;
+
+            /* Typography Scale - Major Third (1.250) */
+            --text-xs: 0.640rem;
+            --text-sm: 0.800rem;
+            --text-base: 1.000rem;
+            --text-md: 1.250rem;
+            --text-lg: 1.563rem;
+            --text-xl: 1.953rem;
+            --text-2xl: 2.441rem;
+            --text-3xl: 3.052rem;
         }
 
         [data-theme="dark"] {
-            /* Dark theme */
-            --bg-primary: #000000;
-            --bg-card: #1E1E1E;
-            --bg-tooltip: #1E1E1E;
-            --text-primary: #ffffff;
-            --text-secondary: #888888;
-            --text-muted: #666666;
-            --accent: #FF5722;
+            /* Dark theme - Warmer, sophisticated palette */
+            /* Backgrounds */
+            --bg-primary: #0D0D12;
+            --bg-secondary: #141419;
+            --bg-card: #1A1A22;
+            --bg-elevated: #22222B;
+            --bg-tooltip: #1A1A22;
+
+            /* Text */
+            --text-primary: #F5F5F7;
+            --text-secondary: #A8A8B8;
+            --text-tertiary: #686878;
+            --text-muted: #686878;
+            --text-inverse: #0D0D12;
+
+            /* Accents - Slightly brighter for dark mode */
+            --accent: #FF6B66;
+            --accent-primary: #FF6B66;
+            --accent-secondary: #4DCDCD;
+            --accent-tertiary: #FFB966;
             --accent-light: #FF8A65;
-            --border: #333333;
-            --border-subtle: #444444;
-            --grid: #333333;
-            --shadow: rgba(0, 0, 0, 0.3);
-            --shadow-tooltip: rgba(0, 0, 0, 0.4);
-            --overlay: rgba(0, 0, 0, 0.7);
+            --accent-primary-light: #3D2A29;
+            --accent-secondary-light: #1A2D2D;
+            --accent-tertiary-light: #3D2A1A;
+
+            /* Borders */
+            --border: #2A2A32;
+            --border-subtle: #2A2A32;
+            --border-medium: #3A3A42;
+            --border-strong: #4A4A52;
+            --grid: #2A2A32;
+
+            /* Shadows - Warm-tinted for dark mode */
+            --shadow: rgba(0, 0, 0, 0.5);
+            --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.3);
+            --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.4);
+            --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.5);
+            --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.6);
+            --shadow-xl: 0 16px 48px rgba(0, 0, 0, 0.7);
+            --shadow-tooltip: rgba(0, 0, 0, 0.7);
+            --overlay: rgba(0, 0, 0, 0.8);
         }
 
         * {
@@ -82,28 +165,32 @@
             color: var(--accent);
         }
 
-        /* Theme toggle button */
+        /* Theme toggle button - Icon button style */
         .theme-toggle {
             position: absolute;
             top: 0;
             right: 0;
             background: var(--bg-card);
-            border: 1px solid var(--border);
-            border-radius: 50%;
-            width: 44px;
-            height: 44px;
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-full);
+            width: 40px;
+            height: 40px;
             display: flex;
             align-items: center;
             justify-content: center;
             cursor: pointer;
-            font-size: 20px;
-            transition: all 0.3s ease;
-            box-shadow: 0 2px 8px var(--shadow);
+            font-size: 18px;
+            transition: all 0.2s ease;
+            box-shadow: var(--shadow-sm);
+            color: var(--text-secondary);
         }
 
         .theme-toggle:hover {
-            transform: scale(1.1);
-            box-shadow: 0 4px 12px var(--shadow);
+            background: var(--bg-elevated);
+            border-color: var(--border-medium);
+            color: var(--text-primary);
+            box-shadow: var(--shadow-md);
+            transform: scale(1.05);
         }
 
         .theme-toggle:active {
@@ -131,10 +218,17 @@
 
         .card {
             background: var(--bg-card);
-            border-radius: 12px;
+            border-radius: var(--radius-md);
             padding: 20px;
-            box-shadow: 0 1px 3px var(--shadow);
-            transition: background 0.3s ease;
+            border: 1px solid var(--border-subtle);
+            box-shadow: var(--shadow-sm);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .card:hover {
+            border-color: var(--border-medium);
+            box-shadow: var(--shadow-md);
+            transform: translateY(-1px);
         }
 
         .expandable-card .card-header {
@@ -272,11 +366,15 @@
         .heatmap-cell.level-5 { opacity: 1; }
 
         .heatmap-labels {
-            display: flex;
-            justify-content: space-between;
+            position: relative;
             margin-top: 8px;
             font-size: 10px;
             color: var(--text-muted);
+            height: 16px;
+        }
+
+        .heatmap-labels span {
+            position: absolute;
         }
 
         /* Heatmap Tooltip */
@@ -639,33 +737,391 @@
             letter-spacing: 1px;
             font-weight: 600;
         }
+
+        /* NEW: Header Layout */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: var(--space-8);
+            position: relative;
+        }
+
+        .header-brand {
+            display: flex;
+            align-items: center;
+            gap: var(--space-4);
+        }
+
+        .logo-mark {
+            font-size: 32px;
+            line-height: 1;
+        }
+
+        .logo-text h1 {
+            margin: 0;
+            font-size: var(--text-2xl);
+            line-height: 1.2;
+        }
+
+        /* NEW: Bento Box Layout */
+        .hero-grid {
+            grid-template-columns: repeat(2, 1fr);
+            gap: var(--space-4);
+            margin-bottom: var(--space-4);
+        }
+
+        .hero-card {
+            padding: var(--space-6);
+            background: var(--gradient-warm);
+            color: var(--text-inverse);
+            border: none;
+        }
+
+        .hero-card .card-label {
+            color: rgba(255, 255, 255, 0.9);
+            font-size: var(--text-sm);
+            letter-spacing: 1px;
+        }
+
+        .hero-value {
+            font-size: 48px;
+            font-weight: 700;
+            margin: var(--space-2) 0;
+            color: var(--text-inverse);
+        }
+
+        .hero-card .card-subtext {
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        /* Token Breakdown */
+        .token-breakdown {
+            margin-bottom: var(--space-4);
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+        }
+
+        .token-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: var(--space-4);
+        }
+
+        .token-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: var(--space-4);
+        }
+
+        .token-metric {
+            text-align: center;
+            padding: var(--space-3);
+            background: var(--bg-secondary);
+            border-radius: var(--radius-sm);
+        }
+
+        .token-label {
+            font-size: var(--text-xs);
+            font-weight: 600;
+            color: var(--text-tertiary);
+            letter-spacing: 0.5px;
+            margin-bottom: var(--space-2);
+        }
+
+        .token-value {
+            font-size: var(--text-lg);
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        /* Compact Grid */
+        .compact-grid {
+            gap: var(--space-4);
+            margin-bottom: var(--space-6);
+        }
+
+        .compact-card {
+            padding: var(--space-4);
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .compact-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: var(--gradient-cool);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .compact-card:hover::before {
+            opacity: 1;
+        }
+
+        .compact-icon {
+            font-size: 24px;
+            margin-bottom: var(--space-2);
+        }
+
+        .compact-value {
+            font-size: var(--text-xl);
+            font-weight: 700;
+            color: var(--accent-primary);
+            margin-bottom: var(--space-1);
+        }
+
+        .compact-label {
+            font-size: var(--text-xs);
+            font-weight: 600;
+            color: var(--text-tertiary);
+            letter-spacing: 0.5px;
+        }
+
+        /* PHASE 3: Interactive Enhancements */
+        /* Skeleton Loading */
+        .skeleton {
+            background: linear-gradient(
+                90deg,
+                var(--bg-secondary) 0%,
+                var(--bg-elevated) 50%,
+                var(--bg-secondary) 100%
+            );
+            background-size: 200% 100%;
+            animation: shimmer 1.5s infinite;
+            border-radius: var(--radius-sm);
+        }
+
+        @keyframes shimmer {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+
+        /* Entry Animations */
+        @keyframes fadeUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .animate-in {
+            animation: fadeUp 0.5s ease-out forwards;
+        }
+
+        .delay-1 { animation-delay: 0.1s; opacity: 0; }
+        .delay-2 { animation-delay: 0.2s; opacity: 0; }
+        .delay-3 { animation-delay: 0.3s; opacity: 0; }
+        .delay-4 { animation-delay: 0.4s; opacity: 0; }
+        .delay-5 { animation-delay: 0.5s; opacity: 0; }
+        .delay-6 { animation-delay: 0.6s; opacity: 0; }
+
+        /* Enhanced Focus States */
+        *:focus-visible {
+            outline: 2px solid var(--accent-primary);
+            outline-offset: 2px;
+            border-radius: var(--radius-sm);
+        }
+
+        /* Smooth Value Transitions */
+        .card-value {
+            transition: color 0.3s ease;
+        }
+
+        /* Enhanced Card Hover */
+        .card {
+            position: relative;
+        }
+
+        .card-interactive {
+            cursor: pointer;
+        }
+
+        .card-interactive:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        /* PHASE 4: Accessibility & Advanced Features */
+        /* Skip to content link */
+        .skip-link {
+            position: absolute;
+            top: -100%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--accent-primary);
+            color: var(--text-inverse);
+            padding: var(--space-3) var(--space-5);
+            border-radius: var(--radius-md);
+            text-decoration: none;
+            font-weight: var(--font-semibold);
+            z-index: 9999;
+            transition: top 0.3s ease;
+        }
+
+        .skip-link:focus {
+            top: var(--space-4);
+        }
+
+        /* High contrast mode support */
+        @media (prefers-contrast: high) {
+            .card {
+                border: 2px solid var(--text-primary);
+            }
+        }
+
+        /* Reduced motion support */
+        @media (prefers-reduced-motion: reduce) {
+            *,
+            *::before,
+            *::after {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+            }
+        }
     </style>
 </head>
 <body>
+    <a href="#dashboard" class="skip-link">Skip to main content</a>
     <div class="container">
         <div id="loadSection" class="load-section">
             <div class="header-icon">⭐</div>
-            <h1>claude code <span class="wrapped">wrapped 2025</span></h1>
+            <h1>My Claude Activity</h1>
             <p style="margin-top: 30px;">Loading your stats...</p>
         </div>
 
         <div id="dashboard">
             <div class="header">
-                <div class="header-icon">⭐</div>
-                <h1>claude code <span class="wrapped">wrapped 2025</span></h1>
+                <div class="header-brand">
+                    <div class="logo-mark">⚡</div>
+                    <div class="logo-text">
+                        <h1>My Claude Activity</h1>
+                    </div>
+                </div>
                 <button class="theme-toggle" id="themeToggle" aria-label="Toggle theme" title="Toggle dark/light mode">
                     <span class="theme-icon">🌙</span>
                 </button>
             </div>
 
-            <!-- Row 1: Journey, Most Active Day, Weekly Activity -->
-            <div class="grid grid-3">
-                <div class="card">
-                    <div class="card-label">YOUR JOURNEY STARTED</div>
-                    <div class="card-value accent" id="journeyDate">-</div>
-                    <div class="card-subtext" id="journeyDays">days ago</div>
+            <!-- HERO METRICS: Bento Box Layout -->
+            <!-- Top Row: Two Large Hero Cards -->
+            <div class="grid hero-grid">
+                <div class="card hero-card animate-in delay-1">
+                    <div class="card-label">SESSIONS</div>
+                    <div class="card-value hero-value" id="totalSessions">0</div>
+                    <div class="card-subtext">coding sessions</div>
                 </div>
 
+                <div class="card hero-card animate-in delay-2">
+                    <div class="card-label">MESSAGES</div>
+                    <div class="card-value hero-value" id="totalMessages">0</div>
+                    <div class="card-subtext">total exchanges</div>
+                </div>
+            </div>
+
+            <!-- Middle Row: Full-width Token Breakdown -->
+            <div class="card token-breakdown animate-in delay-3">
+                <div class="token-header">
+                    <div class="card-label">TOTAL TOKENS PROCESSED</div>
+                    <div class="card-value accent" id="totalTokens">0</div>
+                </div>
+                <div class="token-grid">
+                    <div class="token-metric">
+                        <div class="token-label">Input</div>
+                        <div class="token-value" id="totalInputTokens">0</div>
+                    </div>
+                    <div class="token-metric">
+                        <div class="token-label">Output</div>
+                        <div class="token-value" id="totalOutputTokens">0</div>
+                    </div>
+                    <div class="token-metric">
+                        <div class="token-label">Cache Read</div>
+                        <div class="token-value" id="cacheReadTokens">0</div>
+                    </div>
+                    <div class="token-metric">
+                        <div class="token-label">Cache Write</div>
+                        <div class="token-value" id="cacheWriteTokens">0</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Row 3: Cache Efficiency + Model Usage -->
+            <div class="grid" style="grid-template-columns: 1fr 1fr; margin-top: 16px;">
+                <div class="card">
+                    <div class="card-label">CACHE EFFICIENCY</div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                        <span class="card-subtext dark">Cache Hit Rate</span>
+                        <span class="card-value accent" id="cacheHitRate" style="font-size: 28px;">0%</span>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="cacheProgressBar" style="width: 0%"></div>
+                    </div>
+                    <div class="metrics-row">
+                        <span>Cache Read</span>
+                        <span class="cache-metric-value" id="cacheReadTokensSmall">0</span>
+                    </div>
+                    <div class="metrics-row">
+                        <span>Cache Write</span>
+                        <span class="cache-metric-value" id="cacheWriteTokensSmall">0</span>
+                    </div>
+                </div>
+
+                <div class="card expandable-card" id="modelDetailsCard">
+                    <div class="card-header">
+                        <div class="card-label">MODEL USAGE</div>
+                        <button class="expand-btn" aria-expanded="false">
+                            <span class="expand-text">Show Details</span>
+                            <span class="expand-icon">▼</span>
+                        </button>
+                    </div>
+                    <div class="card-value accent" id="totalCost">$0</div>
+                    <div class="card-subtext" id="modelCount">0 models used</div>
+                    <div class="card-content collapsed" id="modelDetailsContent">
+                        <!-- Populated by JS -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bottom Row: Four Compact Stat Cards -->
+            <div class="grid grid-4 compact-grid">
+                <div class="card compact-card animate-in delay-4">
+                    <div class="compact-icon">🔥</div>
+                    <div class="compact-value" id="currentStreak">0</div>
+                    <div class="compact-label">DAY STREAK</div>
+                </div>
+
+                <div class="card compact-card animate-in delay-4">
+                    <div class="compact-icon">📊</div>
+                    <div class="compact-value" id="avgPerSession">0</div>
+                    <div class="compact-label">AVG/SESSION</div>
+                </div>
+
+                <div class="card compact-card animate-in delay-5">
+                    <div class="compact-icon">🔧</div>
+                    <div class="compact-value" id="totalTools">0</div>
+                    <div class="compact-label">TOOL CALLS</div>
+                </div>
+
+                <div class="card compact-card animate-in delay-5">
+                    <div class="compact-icon">📅</div>
+                    <div class="compact-value" id="journeyDate">-</div>
+                    <div class="compact-label">STARTED</div>
+                </div>
+            </div>
+
+            <!-- Activity Stats: Most Active Day + Weekly Activity -->
+            <div class="grid">
                 <div class="card">
                     <div class="card-label">MOST ACTIVE DAY</div>
                     <div class="card-value" id="mostActiveDay">-</div>
@@ -678,7 +1134,7 @@
                 </div>
             </div>
 
-            <!-- Row 2: Activity Heatmap -->
+            <!-- Activity Heatmap -->
             <div class="card" style="margin-bottom: 16px;">
                 <div class="card-label">ACTIVITY HEATMAP</div>
                 <div class="heatmap-container">
@@ -687,11 +1143,7 @@
                     </div>
                     <div class="heatmap" id="heatmap"></div>
                 </div>
-                <div class="heatmap-labels">
-                    <span>Jan</span><span>Feb</span><span>Mar</span><span>Apr</span><span>May</span>
-                    <span>Jun</span><span>Jul</span><span>Aug</span><span>Sep</span><span>Oct</span>
-                    <span>Nov</span><span>Dec</span>
-                </div>
+                <div class="heatmap-labels"></div>
             </div>
 
             <!-- Heatmap Tooltip -->
@@ -717,7 +1169,7 @@
                 </div>
             </div>
 
-            <!-- Row 3: Timeline Charts -->
+            <!-- Row 5: Timeline Charts -->
             <div class="card full-width" style="margin-bottom: 16px;">
                 <div class="card-label">DAILY ACTIVITY TIMELINE</div>
                 <div class="chart-container">
@@ -748,92 +1200,11 @@
                 </div>
             </div>
 
-            <!-- Row 3.5: AI-Powered Suggestions -->
+            <!-- Row 7: AI-Powered Suggestions -->
             <div class="card" style="margin-top: 16px;">
                 <div class="card-label">WAYS TO GET MORE FROM CLAUDE CODE</div>
                 <div class="suggestions-grid" id="suggestionsGrid">
                     <!-- Suggestions populated by JS -->
-                </div>
-            </div>
-
-            <!-- Row 4: Cache Efficiency -->
-            <div class="grid" style="grid-template-columns: 1fr 1fr; margin-top: 16px;">
-                <div class="card">
-                    <div class="card-label">CACHE EFFICIENCY</div>
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                        <span class="card-subtext dark">Cache Hit Rate</span>
-                        <span class="card-value accent" id="cacheHitRate" style="font-size: 28px;">0%</span>
-                    </div>
-                    <div class="progress-bar">
-                        <div class="progress-fill" id="cacheProgressBar" style="width: 0%"></div>
-                    </div>
-                    <div class="metrics-row">
-                        <span>Cache Read</span>
-                        <span id="cacheReadTokens">0</span>
-                    </div>
-                    <div class="metrics-row">
-                        <span>Cache Write</span>
-                        <span id="cacheWriteTokens">0</span>
-                    </div>
-                </div>
-
-                <div class="card expandable-card" id="modelDetailsCard">
-                    <div class="card-header">
-                        <div class="card-label-expandable">MODEL USAGE</div>
-                        <div style="display: flex; align-items: center; gap: 16px;">
-                            <span class="card-subtext dark" id="modelCount">0 models</span>
-                            <span class="card-subtext dark" id="totalCost">$0</span>
-                            <button class="expand-btn" aria-expanded="false">
-                                <span class="expand-text">Show Details</span>
-                                <span class="expand-icon">▼</span>
-                            </button>
-                        </div>
-                    </div>
-                    <div class="card-content collapsed" id="modelDetailsContent">
-                        <!-- Populated by JS -->
-                    </div>
-                </div>
-            </div>
-
-            <!-- Row 5: Sessions, Messages, Total Tokens -->
-            <div class="grid grid-3">
-                <div class="card">
-                    <div class="card-label">SESSIONS</div>
-                    <div class="card-value" id="totalSessions">0</div>
-                    <div class="card-subtext">coding sessions</div>
-                </div>
-
-                <div class="card">
-                    <div class="card-label">MESSAGES</div>
-                    <div class="card-value" id="totalMessages">0</div>
-                    <div class="card-subtext">total exchanges</div>
-                </div>
-
-                <div class="card">
-                    <div class="card-label">TOTAL TOKENS</div>
-                    <div class="card-value accent" id="totalTokens">0</div>
-                    <div class="card-subtext">processed</div>
-                </div>
-            </div>
-
-            <!-- Row 6: Current Streak, Avg per Session, Tool Calls -->
-            <div class="grid grid-3">
-                <div class="card">
-                    <div class="card-label">CURRENT STREAK</div>
-                    <div class="card-value accent" id="currentStreak">0</div>
-                    <div class="card-subtext">days in a row</div>
-                </div>
-
-                <div class="card">
-                    <div class="card-label">AVG PER SESSION</div>
-                    <div class="card-value" id="avgPerSession">0</div>
-                    <div class="card-subtext">messages</div>
-                </div>
-
-                <div class="card">
-                    <div class="card-label">TOOL CALLS</div>
-                    <div class="card-value" id="totalTools">0</div>
-                    <div class="card-subtext">actions performed</div>
                 </div>
             </div>
 
@@ -951,6 +1322,28 @@
             applyTheme(currentTheme);
         }
 
+        // PHASE 4: Keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            // Cmd/Ctrl + Shift + D: Toggle dark/light mode
+            if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key === 'D') {
+                e.preventDefault();
+                toggleTheme();
+            }
+
+            // Escape: Close any open expandable sections
+            if (e.key === 'Escape') {
+                document.querySelectorAll('.card-content.expanded').forEach(content => {
+                    content.classList.remove('expanded');
+                    content.classList.add('collapsed');
+                });
+                document.querySelectorAll('.expand-btn').forEach(btn => {
+                    btn.querySelector('.expand-text').textContent = 'Show Details';
+                    btn.querySelector('.expand-icon').style.transform = 'rotate(0deg)';
+                    btn.setAttribute('aria-expanded', 'false');
+                });
+            }
+        });
+
         // Auto-load from data.json on page load
         window.addEventListener('DOMContentLoaded', async () => {
             applyTheme(currentTheme);
@@ -974,7 +1367,7 @@
             } catch (e) {
                 document.getElementById('loadSection').innerHTML = `
                     <div class="header-icon">⭐</div>
-                    <h1>claude code <span class="wrapped">wrapped 2025</span></h1>
+                    <h1>My Claude Activity</h1>
                     <p style="margin-top: 30px;">Could not load stats. Run: ./serve.sh</p>
                     <div class="error" style="display: block;">${e.message}</div>
                 `;
@@ -1017,8 +1410,8 @@
             const journeyDate = new Date(firstDate);
             const daysAgo = Math.floor((new Date() - journeyDate) / (1000 * 60 * 60 * 24));
 
+            // journeyDate is now in the compact card
             animateValue('journeyDate', DashboardUtils.formatDate(journeyDate));
-            document.getElementById('journeyDays').textContent = `${daysAgo} days ago`;
 
             // Most active day
             const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
@@ -1059,6 +1452,27 @@
             animateValue('currentStreak', DashboardUtils.calculateStreak(activity));
             document.getElementById('avgPerSession').textContent = avgPerSession;
             animateValue('totalTools', totalToolCalls.toLocaleString());
+
+            // Token breakdown
+            const cacheStats = DashboardUtils.calculateCacheStats(statsData.modelUsage);
+            document.getElementById('cacheReadTokens').textContent = DashboardUtils.formatTokens(cacheStats.cacheRead);
+            document.getElementById('cacheWriteTokens').textContent = DashboardUtils.formatTokens(cacheStats.cacheWrite);
+            // Also update the small values in CACHE EFFICIENCY card
+            document.getElementById('cacheReadTokensSmall').textContent = DashboardUtils.formatTokens(cacheStats.cacheRead);
+            document.getElementById('cacheWriteTokensSmall').textContent = DashboardUtils.formatTokens(cacheStats.cacheWrite);
+
+            // Calculate input and output tokens from model usage
+            let totalInput = 0;
+            let totalOutput = 0;
+            if (statsData.modelUsage) {
+                // modelUsage is an object, not an array
+                Object.values(statsData.modelUsage).forEach(model => {
+                    totalInput += model.inputTokens || 0;
+                    totalOutput += model.outputTokens || 0;
+                });
+            }
+            document.getElementById('totalInputTokens').textContent = DashboardUtils.formatTokens(totalInput);
+            document.getElementById('totalOutputTokens').textContent = DashboardUtils.formatTokens(totalOutput);
         }
 
         function animateValue(elementId, value) {
@@ -1095,13 +1509,20 @@
 
         function renderHeatmap(activity) {
             const heatmap = document.getElementById('heatmap');
+            const labelsContainer = document.querySelector('.heatmap-labels');
             heatmap.innerHTML = '';
+            labelsContainer.innerHTML = '';
 
             const startDate = new Date(activity[0]?.date || new Date());
             // Get the first day of the week (Sunday) for the start date
             const startDay = startDate.getDay();
             const firstSunday = new Date(startDate);
             firstSunday.setDate(startDate.getDate() - startDay);
+
+            // Track month boundaries
+            const monthStarts = new Map(); // month -> first week index
+            const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+                            'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
             for (let week = 0; week < 52; week++) {
                 for (let day = 0; day < 7; day++) {
@@ -1111,6 +1532,12 @@
                     const cellDate = new Date(firstSunday);
                     cellDate.setDate(firstSunday.getDate() + (week * 7) + day);
                     const dateStr = cellDate.toISOString().split('T')[0];
+
+                    // Track first occurrence of each month
+                    const month = cellDate.getMonth();
+                    if (!monthStarts.has(month)) {
+                        monthStarts.set(month, week);
+                    }
 
                     const dayData = activity.find(d => d.date === dateStr);
                     if (dayData && dayData.messageCount > 0) {
@@ -1131,6 +1558,15 @@
                     heatmap.appendChild(cell);
                 }
             }
+
+            // Generate positioned month labels
+            // Cell width (12px) + gap (3px) = 15px per week column
+            monthStarts.forEach((weekIndex, monthIndex) => {
+                const label = document.createElement('span');
+                label.textContent = months[monthIndex];
+                label.style.left = `${weekIndex * 15}px`;
+                labelsContainer.appendChild(label);
+            });
         }
 
         function showHeatmapTooltip(event, dateStr) {
@@ -1520,6 +1956,9 @@
             document.getElementById('cacheProgressBar').style.width = cacheStats.hitRate + '%';
             document.getElementById('cacheReadTokens').textContent = DashboardUtils.formatTokens(cacheStats.cacheRead);
             document.getElementById('cacheWriteTokens').textContent = DashboardUtils.formatTokens(cacheStats.cacheWrite);
+            // Also update the small values in CACHE EFFICIENCY card
+            document.getElementById('cacheReadTokensSmall').textContent = DashboardUtils.formatTokens(cacheStats.cacheRead);
+            document.getElementById('cacheWriteTokensSmall').textContent = DashboardUtils.formatTokens(cacheStats.cacheWrite);
         }
 
         function renderModelDetails() {

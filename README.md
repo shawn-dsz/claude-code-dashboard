@@ -14,11 +14,11 @@ A personal analytics dashboard that visualizes usage patterns for [Claude Code](
 Run the update script:
 
 ```bash
-cd /Users/shawn/proj/claude-code-dashboard
+cd /path/to/claude-code-dashboard
 ./update.sh
 ```
 
-Or manually copy the stats:
+Or manually copy the stats (from the dashboard directory):
 
 ```bash
 cp ~/.claude/stats-cache.json data.json
@@ -49,6 +49,57 @@ The dashboard will open at `http://localhost:8000`
 - **Interactive Charts** - Daily activity timeline, weekly patterns, distribution charts
 - **Theme Toggle** - Switch between dark and light themes with the 🌙/☀️ button
 - **Glossary** - Built-in definitions for all metrics and terms
+
+## Setting Up With Your Own Stats
+
+This dashboard works with **your own Claude Code stats** automatically. The scripts read from your `~/.claude/` directory - **no code changes needed**.
+
+### Where Your Data Comes From
+
+When you use Claude Code CLI, it stores session data here:
+
+```
+~/.claude/
+├── projects/
+│   ├── project-1/
+│   │   └── session.jsonl      # Your session history
+│   └── project-2/
+│       └── session.jsonl
+└── stats-cache.json            # Aggregated statistics
+```
+
+The dashboard scripts automatically:
+1. Read your session files from `~/.claude/projects/`
+2. Build a fast SQLite cache in `.cache/sessions.db`
+3. Generate `projects.json` and `sessions.json` for the dashboard
+
+### One-Time Setup
+
+```bash
+# 1. Clone or download this repository
+git clone <repository-url>
+cd claude-code-dashboard
+
+# 2. Install dependencies (for session cache builder)
+npm install
+
+# 3. Update your data
+./update.sh
+
+# 4. Start the dashboard
+./serve.sh
+```
+
+That's it! The dashboard will open at `http://localhost:8000` with **your own stats**.
+
+### Updating Your Data
+
+Whenever you want to see updated stats:
+
+1. Run the update script: `./update.sh`
+2. Refresh the dashboard in your browser
+
+The script copies your latest Claude Code stats from `~/.claude/stats-cache.json` to `data.json`.
 
 ## Key Links
 

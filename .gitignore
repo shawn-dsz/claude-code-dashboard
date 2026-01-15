@@ -6,3 +6,11 @@ node_modules/
 
 # OS files
 .DS_Store
+
+# Local data files (user-specific)
+projects.json
+sessions.json
+data.json
+
+# Local Claude settings
+.claude/settings.local.json

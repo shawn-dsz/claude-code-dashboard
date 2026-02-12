@@ -212,6 +212,10 @@
             grid-template-columns: repeat(4, 1fr);
         }
 
+        .grid-5 {
+            grid-template-columns: repeat(5, 1fr);
+        }
+
         .full-width {
             grid-column: 1 / -1;
         }
@@ -612,8 +616,14 @@
         }
 
         /* Responsive */
+        @media (max-width: 900px) {
+            .grid-5 {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
         @media (max-width: 640px) {
-            .grid, .grid-3, .grid-4 {
+            .grid, .grid-3, .grid-4, .grid-5 {
                 grid-template-columns: 1fr;
             }
             .card-value {
@@ -1094,7 +1104,7 @@
             </div>
 
             <!-- Bottom Row: Four Compact Stat Cards -->
-            <div class="grid grid-4 compact-grid">
+            <div class="grid grid-5 compact-grid">
                 <div class="card compact-card animate-in delay-4">
                     <div class="compact-icon">🔥</div>
                     <div class="compact-value" id="currentStreak">0</div>
@@ -1117,6 +1127,12 @@
                     <div class="compact-icon">📅</div>
                     <div class="compact-value" id="journeyDate">-</div>
                     <div class="compact-label">STARTED</div>
+                </div>
+
+                <div class="card compact-card animate-in delay-5">
+                    <div class="compact-icon">📈</div>
+                    <div class="compact-value" id="avgTokensPerDay">0</div>
+                    <div class="compact-label">AVG TOKENS/DAY</div>
                 </div>
             </div>
 
@@ -1404,6 +1420,8 @@
             const totalToolCalls = activity.reduce((sum, day) => sum + day.toolCallCount, 0);
             const avgPerSession = totalSessions > 0 ? Math.round(totalMessages / totalSessions) : 0;
             const totalTokens = dailyData.reduce((sum, d) => sum + d.tokens, 0);
+            const activeDays = dailyData.filter(d => d.tokens > 0).length;
+            const avgTokensPerDay = activeDays > 0 ? Math.round(totalTokens / activeDays) : 0;
 
             // Journey date
             const firstDate = activity[0]?.date || new Date().toISOString();
@@ -1452,6 +1470,7 @@
             animateValue('currentStreak', DashboardUtils.calculateStreak(activity));
             document.getElementById('avgPerSession').textContent = avgPerSession;
             animateValue('totalTools', totalToolCalls.toLocaleString());
+            animateValue('avgTokensPerDay', DashboardUtils.formatTokens(avgTokensPerDay));
 
             // Token breakdown
             const cacheStats = DashboardUtils.calculateCacheStats(statsData.modelUsage);

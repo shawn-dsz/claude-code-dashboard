@@ -2,21 +2,37 @@
 # Claude Code Dashboard Server
 # Usage: ./serve.sh [port]
 
-PORT="${1:-8000}"
+PORT="${1:-8080}"
+HOST="claude-dashboard"
+URL="http://${HOST}:${PORT}"
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 echo "🚀 Starting Claude Code Dashboard..."
 echo ""
 
-# Run aggregation script
+# Build session cache and aggregate data
 if [ -f "$DIR/aggregate-data.sh" ]; then
     echo "📊 Aggregating data..."
     bash "$DIR/aggregate-data.sh"
     echo ""
 fi
 
+# Rebuild data.json from SQLite cache
+if [ -f "$DIR/rebuild-stats.js" ]; then
+    echo "📈 Rebuilding stats..."
+    node "$DIR/rebuild-stats.js"
+    echo ""
+fi
+
+# Ensure hosts entry exists
+if ! grep -q "$HOST" /etc/hosts 2>/dev/null; then
+    echo "⚠️  No /etc/hosts entry for $HOST."
+    echo "   Run: sudo sh -c 'echo \"127.0.0.1 $HOST\" >> /etc/hosts'"
+    echo ""
+fi
+
 echo "📁 Directory: $DIR"
-echo "🌐 URL: http://localhost:$PORT"
+echo "🌐 URL: $URL"
 echo ""
 echo "Theme toggle is available in the app (🌙/☀️ button)"
 echo ""
@@ -34,7 +50,7 @@ SERVER_PID=$!
 sleep 0.5
 
 # Open browser
-open "http://localhost:$PORT/"
+open "$URL"
 
 # Wait for the server process
 wait $SERVER_PID

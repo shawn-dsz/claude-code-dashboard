@@ -198,9 +198,9 @@ function parseSessionFile(filePath) {
                     session.total_cache_write_tokens += usage.cache_creation_input_tokens || 0;
                 }
 
-                // Count tool calls
-                if (entry.type === 'assistant' && entry.message?.tool_calls) {
-                    session.tool_call_count += entry.message.tool_calls.length || 0;
+                // Count tool calls (content blocks with type === 'tool_use')
+                if (entry.type === 'assistant' && Array.isArray(entry.message?.content)) {
+                    session.tool_call_count += entry.message.content.filter(b => b.type === 'tool_use').length;
                 }
 
                 // Extract git branch if available

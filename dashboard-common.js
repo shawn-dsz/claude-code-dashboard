@@ -3,6 +3,9 @@
  * Shared functions for both light and dark themes
  */
 
+/* eslint-disable no-var */
+if (typeof window === 'undefined') { var window = {}; }
+
 window.DashboardUtils = (function() {
     'use strict';
 
@@ -503,8 +506,15 @@ window.DashboardUtils = (function() {
 })();
 
 // Close modal on escape key
-document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') {
-        window.DashboardUtils.closeModal();
-    }
-});
+if (typeof document !== 'undefined') {
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+            window.DashboardUtils.closeModal();
+        }
+    });
+}
+
+// Export for testing (Node.js / vitest)
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = window.DashboardUtils;
+}

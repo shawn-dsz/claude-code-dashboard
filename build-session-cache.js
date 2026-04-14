@@ -467,4 +467,9 @@ async function main() {
     }
 }
 
-main();
+// Export for testing
+if (require.main === module) {
+    main();
+}
+
+module.exports = { parseSessionFile };

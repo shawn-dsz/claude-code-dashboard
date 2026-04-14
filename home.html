@@ -192,6 +192,16 @@
             white-space: nowrap;
         }
 
+        .desk-topic, .bed-topic {
+            font-size: 8px;
+            color: var(--text-muted);
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            max-width: 160px;
+        }
+        .desk-topic { color: var(--text-dim); }
+
         /* Typing animation on monitor */
         @keyframes typing {
             0% { width: 0; }
@@ -262,56 +272,65 @@
             white-space: nowrap;
         }
 
-        /* ---- DETAIL PANELS ---- */
-        .detail-grid {
-            display: grid; grid-template-columns: 1fr 1fr;
-            gap: 16px; margin: 0 24px 24px;
+        /* ---- SIDE PANEL ---- */
+        .side-panel {
+            position: fixed;
+            top: 0; right: 0;
+            width: 360px;
+            height: 100vh;
+            background: var(--bg-card);
+            border-left: 1px solid var(--border);
+            transform: translateX(100%);
+            transition: transform 0.2s ease;
+            z-index: 100;
+            display: flex;
+            flex-direction: column;
+            box-shadow: -4px 0 20px rgba(0,0,0,0.4);
         }
-        .detail-panel {
-            background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; overflow: hidden;
+        .side-panel.open { transform: translateX(0); }
+        .side-panel-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 16px;
+            border-bottom: 1px solid var(--border);
         }
-        .detail-panel-header {
-            padding: 10px 16px; border-bottom: 1px solid var(--border);
-            font-size: 10px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px;
-            display: flex; justify-content: space-between; align-items: center;
+        .side-panel-title {
+            font-family: var(--pixel-font);
+            font-size: 8px;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            letter-spacing: 1px;
         }
-        .detail-panel-body { padding: 0; max-height: 300px; overflow-y: auto; }
-        .detail-panel-body::-webkit-scrollbar { width: 4px; }
-        .detail-panel-body::-webkit-scrollbar-track { background: transparent; }
-        .detail-panel-body::-webkit-scrollbar-thumb { background: var(--border-bright); border-radius: 2px; }
+        .side-panel-close {
+            background: none; border: 1px solid var(--border); border-radius: 4px;
+            color: var(--text-dim); cursor: pointer; padding: 4px 8px; font-size: 11px;
+            transition: all .15s;
+        }
+        .side-panel-close:hover { color: var(--text); border-color: var(--border-bright); background: var(--bg-card-hover); }
+        .side-panel-body { flex: 1; overflow-y: auto; padding: 16px; }
+        .side-panel-body::-webkit-scrollbar { width: 4px; }
+        .side-panel-body::-webkit-scrollbar-track { background: transparent; }
+        .side-panel-body::-webkit-scrollbar-thumb { background: var(--border-bright); border-radius: 2px; }
+        .side-panel-overlay {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.3);
+            z-index: 99; display: none;
+        }
+        .side-panel-overlay.open { display: block; }
 
-        .agent-item {
-            display: flex; align-items: center; gap: 12px;
-            padding: 10px 16px; border-bottom: 1px solid var(--border);
-            cursor: pointer; transition: background .1s;
-        }
-        .agent-item:last-child { border-bottom: none; }
-        .agent-item:hover { background: var(--bg-card-hover); }
-        .agent-item.selected { background: #7b61ff11; border-left: 2px solid var(--purple); }
-        .agent-color-dot { width: 8px; height: 8px; border-radius: 2px; flex-shrink: 0; }
-        .agent-info { flex: 1; min-width: 0; }
-        .agent-info-top { display: flex; align-items: center; gap: 8px; }
-        .agent-id-label { font-family: var(--mono); font-size: 11px; font-weight: 600; color: var(--text); }
-        .agent-status-tag { font-size: 8px; padding: 1px 5px; border-radius: 3px; }
-        .agent-status-tag.active { color: var(--green); background: #00d68f15; }
-        .agent-status-tag.idle { color: var(--text-muted); background: #3d456315; }
-        .agent-branch-tag { font-family: var(--mono); font-size: 9px; color: var(--blue); background: #4da6ff11; padding: 1px 6px; border-radius: 3px; }
-        .agent-info-bottom { font-size: 10px; color: var(--text-dim); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .agent-uptime-label { font-family: var(--mono); font-size: 10px; color: var(--text-muted); flex-shrink: 0; }
-
-        .selected-detail { padding: 16px; }
-        .selected-detail-empty { padding: 40px 16px; text-align: center; color: var(--text-muted); font-size: 11px; }
-        .sd-row { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid var(--border); font-size: 11px; }
+        .sd-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid var(--border); font-size: 11px; }
         .sd-row:last-child { border-bottom: none; }
-        .sd-key { color: var(--text-dim); }
+        .sd-key { color: var(--text-dim); flex-shrink: 0; }
         .sd-val { color: var(--text); font-family: var(--mono); text-align: right; max-width: 60%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-        .sd-summary { margin-top: 12px; padding: 10px; background: #0a0e1a; border-radius: 4px; font-size: 11px; color: var(--text-dim); font-style: italic; word-break: break-word; }
+        .sd-status-active { color: var(--green); }
+        .sd-status-idle { color: var(--text-muted); }
+        .sd-summary { margin-top: 12px; padding: 10px; background: #0a0e1a; border-radius: 6px; font-size: 11px; color: var(--text-dim); font-style: italic; word-break: break-word; line-height: 1.5; }
 
         @media (max-width: 768px) {
             .hero { flex-direction: column; gap: 20px; }
             .hero-number { font-size: 48px; }
-            .detail-grid { grid-template-columns: 1fr; }
             .rooms-grid { grid-template-columns: 1fr; }
+            .side-panel { width: 100%; }
         }
     </style>
 </head>
@@ -354,20 +373,13 @@
         <div class="rooms-grid" id="roomsGrid"></div>
     </div>
 
-    <div class="detail-grid">
-        <div class="detail-panel">
-            <div class="detail-panel-header">
-                <span>All Agents</span>
-                <span id="listCount"></span>
-            </div>
-            <div class="detail-panel-body" id="agentListPanel"></div>
+    <div class="side-panel-overlay" id="sidePanelOverlay"></div>
+    <div class="side-panel" id="sidePanel">
+        <div class="side-panel-header">
+            <span class="side-panel-title">Agent Detail</span>
+            <button class="side-panel-close" id="sidePanelClose">Close</button>
         </div>
-        <div class="detail-panel">
-            <div class="detail-panel-header"><span>Agent Detail</span></div>
-            <div class="detail-panel-body" id="agentDetailPanel">
-                <div class="selected-detail-empty">Click an agent to inspect</div>
-            </div>
-        </div>
+        <div class="side-panel-body" id="agentDetailPanel"></div>
     </div>
 
     <script>
@@ -406,6 +418,18 @@
             var h = Math.floor(m / 60);
             if (h < 24) return h + 'h ' + (m % 60) + 'm';
             return Math.floor(h / 24) + 'd ' + (h % 24) + 'h';
+        }
+        function formatTimeSince(ts) {
+            if (!ts) return null;
+            var ms = Date.now() - new Date(ts).getTime();
+            if (ms < 0) return 'just now';
+            var s = Math.floor(ms / 1000);
+            if (s < 60) return s + 's ago';
+            var m = Math.floor(s / 60);
+            if (m < 60) return m + 'm ago';
+            var h = Math.floor(m / 60);
+            if (h < 24) return h + 'h ' + (m % 60) + 'm ago';
+            return Math.floor(h / 24) + 'd ago';
         }
         function el(tag, cls, txt) {
             var n = document.createElement(tag);
@@ -535,8 +559,16 @@
             var stand = el('div', 'desk-monitor-stand');
             // append stand after monitor visually... actually it's fine inline
 
-            // ID label
-            slot.appendChild(el('span', 'desk-id', peer.id));
+            // ID + topic
+            var info = el('div', '');
+            info.style.cssText = 'flex:1;min-width:0;overflow:hidden;';
+            info.appendChild(el('div', 'desk-id', peer.id));
+            if (peer.sessionTopic) {
+                var topic = el('div', 'desk-topic', peer.sessionTopic);
+                topic.title = peer.sessionTopic;
+                info.appendChild(topic);
+            }
+            slot.appendChild(info);
 
             return slot;
         }
@@ -567,14 +599,41 @@
             // zzz
             slot.appendChild(el('span', 'bed-zzz', 'zzz'));
 
-            // ID
-            slot.appendChild(el('span', 'bed-id', peer.id));
+            // ID + topic
+            var info = el('div', '');
+            info.style.cssText = 'flex:1;min-width:0;overflow:hidden;';
+            info.appendChild(el('div', 'bed-id', peer.id));
+            if (peer.sessionTopic) {
+                var topic = el('div', 'bed-topic', peer.sessionTopic);
+                topic.title = peer.sessionTopic;
+                info.appendChild(topic);
+            }
+            slot.appendChild(info);
 
             return slot;
         }
 
-        // ---- SELECTION ----
+        // ---- SELECTION + SIDE PANEL ----
         var allPeersMap = {};
+        var panelEl = document.getElementById('sidePanel');
+        var overlayEl = document.getElementById('sidePanelOverlay');
+
+        function openPanel() {
+            panelEl.classList.add('open');
+            overlayEl.classList.add('open');
+        }
+        function closePanel() {
+            panelEl.classList.remove('open');
+            overlayEl.classList.remove('open');
+            selectedId = null;
+            // Remove selection highlights
+            var allSlots = document.querySelectorAll('.desk-slot, .bed-slot');
+            for (var i = 0; i < allSlots.length; i++) allSlots[i].classList.remove('selected');
+        }
+
+        document.getElementById('sidePanelClose').addEventListener('click', closePanel);
+        overlayEl.addEventListener('click', closePanel);
+        document.addEventListener('keydown', function(e) { if (e.key === 'Escape') closePanel(); });
 
         function selectAgent(id, peer) {
             selectedId = id;
@@ -583,34 +642,27 @@
             // Highlight in rooms
             var allSlots = document.querySelectorAll('.desk-slot, .bed-slot');
             for (var i = 0; i < allSlots.length; i++) allSlots[i].classList.remove('selected');
-            // Highlight in list
-            var allItems = document.querySelectorAll('.agent-item');
-            for (var j = 0; j < allItems.length; j++) allItems[j].classList.remove('selected');
-
-            // Find and highlight the matching slot and list item
-            // (they get rebuilt on each sync, so we rely on re-render adding .selected)
 
             renderDetail(peer);
-            // Force re-render to apply selection
+            openPanel();
             if (lastPeers) renderRooms(lastPeers);
-            if (lastPeers) renderList(lastPeers);
         }
 
         // ---- RENDER DETAIL ----
         function renderDetail(peer) {
             var panel = document.getElementById('agentDetailPanel');
             panel.textContent = '';
-            if (!peer) {
-                panel.appendChild(el('div', 'selected-detail-empty', 'Click an agent to inspect'));
-                return;
-            }
+            if (!peer) return;
+
             var active = isActive(peer);
-            var detail = el('div', 'selected-detail');
+            var detail = el('div', '');
             var rows = [
                 ['ID', peer.id], ['Status', active ? 'Working' : 'Sleeping'],
                 ['Project', extractProject(peer.cwd)], ['Branch', extractBranch(peer.cwd)],
                 ['TTY', peer.tty || '-'], ['Uptime', formatUptime(peer.registered_at)],
                 ['Worktree', isWorktree(peer.cwd) ? 'Yes' : 'No'],
+                ['Session Topic', peer.sessionTopic || '(none)'],
+                ['Last Instruction', formatTimeSince(peer.lastInstructionAt) || '(unknown)'],
                 ['Working Dir', peer.cwd], ['Last Seen', new Date(peer.last_seen).toLocaleTimeString()],
             ];
             for (var i = 0; i < rows.length; i++) {
@@ -618,7 +670,7 @@
                 row.appendChild(el('span', 'sd-key', rows[i][0]));
                 var val = el('span', 'sd-val', rows[i][1]);
                 val.title = rows[i][1];
-                if (rows[i][0] === 'Status') val.style.color = active ? 'var(--green)' : 'var(--text-muted)';
+                if (rows[i][0] === 'Status') val.className = 'sd-val ' + (active ? 'sd-status-active' : 'sd-status-idle');
                 row.appendChild(val);
                 detail.appendChild(row);
             }
@@ -649,38 +701,6 @@
             }
         }
 
-        // ---- RENDER LIST ----
-        function renderList(peers) {
-            var panel = document.getElementById('agentListPanel');
-            panel.textContent = '';
-            var sorted = peers.slice().sort(function(a, b) {
-                return extractProject(a.cwd).localeCompare(extractProject(b.cwd));
-            });
-            for (var i = 0; i < sorted.length; i++) {
-                var peer = sorted[i];
-                var colors = getColors(peer.id);
-                var active = isActive(peer);
-                var item = el('div', 'agent-item' + (peer.id === selectedId ? ' selected' : ''));
-
-                (function(p) { item.addEventListener('click', function() { selectAgent(p.id, p); }); })(peer);
-
-                var dot = el('div', 'agent-color-dot');
-                dot.style.background = active ? colors[0] : 'var(--text-muted)';
-                item.appendChild(dot);
-
-                var info = el('div', 'agent-info');
-                var top = el('div', 'agent-info-top');
-                top.appendChild(el('span', 'agent-id-label', peer.id));
-                top.appendChild(el('span', 'agent-status-tag ' + (active ? 'active' : 'idle'), active ? 'working' : 'sleeping'));
-                top.appendChild(el('span', 'agent-branch-tag', extractBranch(peer.cwd)));
-                info.appendChild(top);
-                info.appendChild(el('div', 'agent-info-bottom', extractProject(peer.cwd)));
-                item.appendChild(info);
-                item.appendChild(el('span', 'agent-uptime-label', formatUptime(peer.registered_at)));
-                panel.appendChild(item);
-            }
-        }
-
         // ---- SYNC ----
         var lastPeers = null;
 
@@ -703,10 +723,8 @@
             document.getElementById('heroIdle').textContent = idleCount;
             document.getElementById('heroProjects').textContent = Object.keys(projectSet).length;
             document.getElementById('statusText').textContent = 'Live - ' + activeCount + ' working, ' + idleCount + ' sleeping - ' + new Date().toLocaleTimeString();
-            document.getElementById('listCount').textContent = activeCount + ' working, ' + idleCount + ' sleeping';
 
             renderRooms(peers);
-            renderList(peers);
 
             if (selectedId && allPeersMap[selectedId]) {
                 renderDetail(allPeersMap[selectedId]);

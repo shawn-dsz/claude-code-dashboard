@@ -419,6 +419,15 @@
             if (h < 24) return h + 'h ' + (m % 60) + 'm';
             return Math.floor(h / 24) + 'd ' + (h % 24) + 'h';
         }
+        function getSessionName(peer) {
+            // Prefer Superset tab name (cleaned), then sessionTopic, then null
+            if (peer.supersetTabName) {
+                // Strip leading status dots and "Claude Code" prefix
+                var name = peer.supersetTabName.replace(/^[\u2800-\u28FF\u2733\s]+/, '').trim();
+                if (name && name !== 'Claude Code' && name.length > 2) return name;
+            }
+            return peer.sessionTopic || null;
+        }
         function formatTimeSince(ts) {
             if (!ts) return null;
             var ms = Date.now() - new Date(ts).getTime();
@@ -563,9 +572,10 @@
             var info = el('div', '');
             info.style.cssText = 'flex:1;min-width:0;overflow:hidden;';
             info.appendChild(el('div', 'desk-id', peer.id));
-            if (peer.sessionTopic) {
-                var topic = el('div', 'desk-topic', peer.sessionTopic);
-                topic.title = peer.sessionTopic;
+            var sessionName = getSessionName(peer);
+            if (sessionName) {
+                var topic = el('div', 'desk-topic', sessionName);
+                topic.title = sessionName;
                 info.appendChild(topic);
             }
             slot.appendChild(info);
@@ -603,9 +613,10 @@
             var info = el('div', '');
             info.style.cssText = 'flex:1;min-width:0;overflow:hidden;';
             info.appendChild(el('div', 'bed-id', peer.id));
-            if (peer.sessionTopic) {
-                var topic = el('div', 'bed-topic', peer.sessionTopic);
-                topic.title = peer.sessionTopic;
+            var sessionName = getSessionName(peer);
+            if (sessionName) {
+                var topic = el('div', 'bed-topic', sessionName);
+                topic.title = sessionName;
                 info.appendChild(topic);
             }
             slot.appendChild(info);
@@ -661,8 +672,10 @@
                 ['Project', extractProject(peer.cwd)], ['Branch', extractBranch(peer.cwd)],
                 ['TTY', peer.tty || '-'], ['Uptime', formatUptime(peer.registered_at)],
                 ['Worktree', isWorktree(peer.cwd) ? 'Yes' : 'No'],
-                ['Session Topic', peer.sessionTopic || '(none)'],
+                ['Session Name', getSessionName(peer) || '(none)'],
                 ['Last Instruction', formatTimeSince(peer.lastInstructionAt) || '(unknown)'],
+                ['Superset Project', peer.supersetProject || '-'],
+                ['Workspace Type', peer.supersetType || '-'],
                 ['Working Dir', peer.cwd], ['Last Seen', new Date(peer.last_seen).toLocaleTimeString()],
             ];
             for (var i = 0; i < rows.length; i++) {

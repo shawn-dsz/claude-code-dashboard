@@ -1,0 +1,711 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Claude Agents — Live</title>
+    <style>
+        /* ================================================================
+           DESIGN SYSTEM — Shared with index.html
+        ================================================================ */
+        :root {
+            --bg:        #F5F4F1;
+            --bg-card:   #FFFFFF;
+            --bg-raised: #FAFAF8;
+            --bg-inset:  #EFEDE8;
+
+            --ink:       #111111;
+            --ink-2:     #555555;
+            --ink-3:     #888888;
+            --ink-4:     #BBBBBB;
+            --ink-inv:   #FFFFFF;
+
+            --red:       #C94F3A;
+            --red-soft:  #F2E8E6;
+            --teal:      #2A9494;
+            --amber:     #2A7A9A;
+
+            --line:      #E4E2DD;
+            --line-2:    #D4D2CC;
+            --grid-clr:  #EEECE7;
+
+            --sh-sm: 0 1px 2px rgba(0,0,0,.05), 0 1px 4px rgba(0,0,0,.04);
+            --sh-md: 0 2px 6px rgba(0,0,0,.06), 0 4px 12px rgba(0,0,0,.04);
+
+            --r: 6px;
+            --gap: 14px;
+
+            --green:     #2D8A4E;
+            --green-soft:#E6F4EC;
+        }
+
+        [data-theme="dark"] {
+            --bg:        #121212;
+            --bg-card:   #1C1C1C;
+            --bg-raised: #222222;
+            --bg-inset:  #181818;
+
+            --ink:       #F0EFEC;
+            --ink-2:     #999994;
+            --ink-3:     #666662;
+            --ink-4:     #444440;
+            --ink-inv:   #121212;
+
+            --red:       #E06050;
+            --teal:      #3ABEBE;
+
+            --line:      #2C2C2C;
+            --line-2:    #3C3C3C;
+            --grid-clr:  #282828;
+
+            --sh-sm: 0 1px 3px rgba(0,0,0,.4);
+            --sh-md: 0 2px 8px rgba(0,0,0,.5);
+
+            --green:     #4ADE80;
+            --green-soft:#1A2E1A;
+            --red-soft:  #2D1E1C;
+        }
+
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+            background: var(--bg);
+            color: var(--ink);
+            min-height: 100vh;
+            padding: 32px 20px 60px;
+            line-height: 1.5;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .container { max-width: 1200px; margin: 0 auto; }
+
+        /* ---- HEADER ---- */
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 28px;
+        }
+
+        .header-left { display: flex; align-items: center; gap: 10px; }
+        .logo-mark { font-size: 22px; line-height: 1; }
+        h1 {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--ink);
+            letter-spacing: -0.02em;
+        }
+        h1 .accent { color: var(--red); }
+
+        .header-right { display: flex; align-items: center; gap: 10px; }
+
+        .nav-link {
+            font-size: .8125rem;
+            font-weight: 600;
+            color: var(--ink-2);
+            text-decoration: none;
+            padding: 6px 12px;
+            border-radius: var(--r);
+            border: 1px solid var(--line);
+            background: var(--bg-card);
+            transition: all .15s;
+        }
+        .nav-link:hover {
+            color: var(--ink);
+            border-color: var(--line-2);
+            box-shadow: var(--sh-sm);
+        }
+
+        .theme-toggle {
+            background: var(--bg-card);
+            border: 1px solid var(--line);
+            border-radius: 9999px;
+            width: 36px; height: 36px;
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer; font-size: 16px;
+            transition: background .15s, border-color .15s;
+            box-shadow: var(--sh-sm);
+            color: var(--ink-2);
+            flex-shrink: 0;
+        }
+        .theme-toggle:hover { background: var(--bg-inset); border-color: var(--line-2); }
+
+        /* ---- STATUS BAR ---- */
+        .status-bar {
+            display: flex;
+            align-items: center;
+            gap: var(--gap);
+            margin-bottom: 24px;
+            flex-wrap: wrap;
+        }
+
+        .status-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            border-radius: 9999px;
+            font-size: .875rem;
+            font-weight: 600;
+            font-variant-numeric: tabular-nums;
+        }
+        .status-pill.live {
+            background: var(--green-soft);
+            color: var(--green);
+            border: 1px solid var(--green);
+        }
+        .status-pill.live .dot {
+            width: 8px; height: 8px;
+            border-radius: 50%;
+            background: var(--green);
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: .5; transform: scale(.8); }
+        }
+
+        .status-meta {
+            font-size: .75rem;
+            color: var(--ink-3);
+        }
+
+        /* ---- BREAKDOWN CARDS ---- */
+        .breakdown-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: var(--gap);
+            margin-bottom: 24px;
+        }
+
+        .breakdown-card {
+            background: var(--bg-card);
+            border: 1px solid var(--line);
+            border-radius: var(--r);
+            padding: 18px 20px;
+            box-shadow: var(--sh-sm);
+        }
+
+        .breakdown-label {
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: .08em;
+            text-transform: uppercase;
+            color: var(--ink-3);
+            margin-bottom: 10px;
+        }
+
+        .breakdown-value {
+            font-size: 2rem;
+            font-weight: 800;
+            color: var(--ink);
+            letter-spacing: -.03em;
+            font-variant-numeric: tabular-nums;
+            line-height: 1.1;
+        }
+        .breakdown-value.accent { color: var(--red); }
+
+        .breakdown-sub {
+            font-size: .75rem;
+            color: var(--ink-3);
+            margin-top: 4px;
+        }
+
+        /* ---- AGENT TABLE ---- */
+        .agents-section {
+            background: var(--bg-card);
+            border: 1px solid var(--line);
+            border-radius: var(--r);
+            box-shadow: var(--sh-sm);
+            overflow: hidden;
+            margin-bottom: 24px;
+        }
+
+        .agents-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--line);
+        }
+
+        .agents-title {
+            font-size: .875rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .05em;
+            color: var(--red);
+        }
+
+        .agents-count {
+            font-size: .75rem;
+            color: var(--ink-3);
+            font-variant-numeric: tabular-nums;
+        }
+
+        .agent-row {
+            display: grid;
+            grid-template-columns: 80px 1fr 1fr 140px 180px;
+            gap: 12px;
+            padding: 14px 20px;
+            border-bottom: 1px solid var(--line);
+            align-items: center;
+            transition: background .1s;
+        }
+        .agent-row:last-child { border-bottom: none; }
+        .agent-row:hover { background: var(--bg-raised); }
+
+        .agent-row-header {
+            background: var(--bg-inset);
+            font-size: 9px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .08em;
+            color: var(--ink-3);
+            padding: 8px 20px;
+        }
+        .agent-row-header:hover { background: var(--bg-inset); }
+
+        .agent-id {
+            font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+            font-size: .8125rem;
+            font-weight: 600;
+            color: var(--red);
+        }
+
+        .agent-project {
+            font-size: .8125rem;
+            font-weight: 600;
+            color: var(--ink);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .agent-wt-badge {
+            font-size: .625rem;
+            color: var(--teal);
+            margin-left: 4px;
+        }
+
+        .agent-branch {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            font-size: .75rem;
+            color: var(--teal);
+            font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .branch-icon {
+            font-size: 11px;
+            flex-shrink: 0;
+        }
+
+        .agent-tty {
+            font-size: .75rem;
+            color: var(--ink-3);
+            font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+        }
+
+        .agent-uptime {
+            font-size: .75rem;
+            color: var(--ink-2);
+            font-variant-numeric: tabular-nums;
+            margin-left: 8px;
+        }
+
+        .agent-summary {
+            font-size: .75rem;
+            color: var(--ink-2);
+            font-style: italic;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .agent-summary.empty { color: var(--ink-4); font-style: normal; }
+
+        /* ---- CLUSTER VIEW ---- */
+        .cluster-section { margin-bottom: 24px; }
+        .cluster-title {
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .08em;
+            color: var(--ink-3);
+            margin-bottom: 12px;
+        }
+        .cluster-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: var(--gap);
+        }
+        .cluster-card {
+            background: var(--bg-card);
+            border: 1px solid var(--line);
+            border-radius: var(--r);
+            padding: 16px;
+            box-shadow: var(--sh-sm);
+            transition: box-shadow .15s, border-color .15s;
+        }
+        .cluster-card:hover {
+            border-color: var(--line-2);
+            box-shadow: var(--sh-md);
+        }
+        .cluster-name {
+            font-size: .875rem;
+            font-weight: 700;
+            color: var(--ink);
+            margin-bottom: 4px;
+        }
+        .cluster-count {
+            font-size: .75rem;
+            color: var(--red);
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+        .cluster-agents {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+        }
+        .cluster-agent-chip {
+            font-size: .6875rem;
+            font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+            background: var(--bg-inset);
+            border: 1px solid var(--line);
+            border-radius: 3px;
+            padding: 2px 6px;
+            color: var(--ink-2);
+        }
+
+        /* ---- EMPTY STATE ---- */
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--ink-3);
+        }
+        .empty-icon { font-size: 2rem; margin-bottom: 12px; }
+        .empty-msg { font-size: .875rem; }
+
+        /* ---- ERROR STATE ---- */
+        .error-banner {
+            background: var(--red-soft);
+            border: 1px solid var(--red);
+            border-radius: var(--r);
+            padding: 12px 16px;
+            margin-bottom: 16px;
+            font-size: .8125rem;
+            color: var(--red);
+            display: none;
+        }
+
+        /* ---- RESPONSIVE ---- */
+        @media (max-width: 900px) {
+            .agent-row { grid-template-columns: 70px 1fr 1fr 120px; }
+            .agent-row > :nth-child(5) { display: none; }
+            .breakdown-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+
+        @media (max-width: 600px) {
+            .agent-row { grid-template-columns: 60px 1fr 1fr; }
+            .agent-row > :nth-child(4),
+            .agent-row > :nth-child(5) { display: none; }
+            .breakdown-grid { grid-template-columns: 1fr; }
+            .header { flex-wrap: wrap; gap: 8px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="header-left">
+                <span class="logo-mark">&#x25CF;</span>
+                <h1>Claude <span class="accent">Agents</span></h1>
+            </div>
+            <div class="header-right">
+                <a href="/index.html" class="nav-link">Activity Dashboard</a>
+                <button class="theme-toggle" id="themeToggle" title="Toggle theme">&#127769;</button>
+            </div>
+        </div>
+
+        <div class="error-banner" id="errorBanner"></div>
+
+        <div class="status-bar">
+            <div class="status-pill live" id="statusPill">
+                <span class="dot"></span>
+                <span id="agentCount">0</span> agents running
+            </div>
+            <span class="status-meta" id="lastUpdated">Connecting...</span>
+        </div>
+
+        <div class="breakdown-grid" id="breakdownGrid">
+            <div class="breakdown-card">
+                <div class="breakdown-label">Unique Projects</div>
+                <div class="breakdown-value accent" id="projectCount">-</div>
+                <div class="breakdown-sub" id="projectList"></div>
+            </div>
+            <div class="breakdown-card">
+                <div class="breakdown-label">Worktrees</div>
+                <div class="breakdown-value" id="worktreeCount">-</div>
+                <div class="breakdown-sub" id="worktreeList"></div>
+            </div>
+            <div class="breakdown-card">
+                <div class="breakdown-label">Unique Branches</div>
+                <div class="breakdown-value" id="branchCount">-</div>
+                <div class="breakdown-sub" id="branchList"></div>
+            </div>
+        </div>
+
+        <div class="cluster-section" id="clusterSection">
+            <div class="cluster-title">Agents by Project</div>
+            <div class="cluster-grid" id="clusterGrid"></div>
+        </div>
+
+        <div class="agents-section">
+            <div class="agents-header">
+                <span class="agents-title">All Agents</span>
+                <span class="agents-count" id="tableCount"></span>
+            </div>
+            <div class="agent-row agent-row-header">
+                <span>ID</span>
+                <span>Project</span>
+                <span>Branch</span>
+                <span>TTY / Uptime</span>
+                <span>Summary</span>
+            </div>
+            <div id="agentList"></div>
+        </div>
+    </div>
+
+    <script>
+        // ---- Theme ----
+        const savedTheme = localStorage.getItem('theme') || 'light';
+        document.documentElement.setAttribute('data-theme', savedTheme);
+        updateThemeButton(savedTheme);
+
+        document.getElementById('themeToggle').addEventListener('click', function() {
+            const current = document.documentElement.getAttribute('data-theme');
+            const next = current === 'dark' ? 'light' : 'dark';
+            document.documentElement.setAttribute('data-theme', next);
+            localStorage.setItem('theme', next);
+            updateThemeButton(next);
+        });
+
+        function updateThemeButton(theme) {
+            document.getElementById('themeToggle').textContent = theme === 'dark' ? '\u2600\uFE0F' : '\uD83C\uDF19';
+        }
+
+        // ---- Data fetching ----
+        var POLL_INTERVAL = 5000;
+
+        function fetchPeers() {
+            return fetch('/api/peers')
+                .then(function(res) {
+                    if (!res.ok) throw new Error('HTTP ' + res.status);
+                    return res.json();
+                })
+                .then(function(peers) {
+                    if (peers.error) throw new Error(peers.error);
+                    hideError();
+                    return peers;
+                })
+                .catch(function(e) {
+                    showError('Broker unavailable: ' + e.message);
+                    return null;
+                });
+        }
+
+        function showError(msg) {
+            var el = document.getElementById('errorBanner');
+            el.textContent = msg;
+            el.style.display = 'block';
+        }
+
+        function hideError() {
+            document.getElementById('errorBanner').style.display = 'none';
+        }
+
+        // ---- Path helpers ----
+        function extractProject(cwd) {
+            var match = cwd.match(/\/proj\/(.+)$/);
+            return match ? match[1] : cwd.split('/').slice(-2).join('/');
+        }
+
+        function isWorktree(cwd) {
+            return cwd.indexOf('/worktrees/') !== -1;
+        }
+
+        function extractBranch(cwd) {
+            if (isWorktree(cwd)) return cwd.split('/').pop();
+            return null;
+        }
+
+        function formatUptime(registeredAt) {
+            var ms = Date.now() - new Date(registeredAt).getTime();
+            var mins = Math.floor(ms / 60000);
+            if (mins < 60) return mins + 'm';
+            var hrs = Math.floor(mins / 60);
+            var remainMins = mins % 60;
+            if (hrs < 24) return hrs + 'h ' + remainMins + 'm';
+            var days = Math.floor(hrs / 24);
+            return days + 'd ' + (hrs % 24) + 'h';
+        }
+
+        // ---- DOM helpers (no innerHTML with dynamic data) ----
+        function el(tag, className, text) {
+            var node = document.createElement(tag);
+            if (className) node.className = className;
+            if (text) node.textContent = text;
+            return node;
+        }
+
+        // ---- Render ----
+        function render(peers) {
+            if (!peers) return;
+
+            var count = peers.length;
+            document.getElementById('agentCount').textContent = count;
+            document.getElementById('lastUpdated').textContent = 'Updated ' + new Date().toLocaleTimeString();
+            document.getElementById('tableCount').textContent = count + ' agent' + (count !== 1 ? 's' : '');
+
+            // Breakdown stats
+            var projectSet = {};
+            var worktreeSet = {};
+            var branchSet = {};
+
+            peers.forEach(function(p) {
+                var proj = extractProject(p.cwd);
+                projectSet[proj] = true;
+                if (isWorktree(p.cwd)) worktreeSet[p.cwd] = true;
+                var br = extractBranch(p.cwd) || 'main';
+                branchSet[br] = true;
+            });
+
+            var projects = Object.keys(projectSet);
+            var worktreePaths = Object.keys(worktreeSet);
+            var branches = Object.keys(branchSet);
+
+            document.getElementById('projectCount').textContent = projects.length;
+            var projNames = projects.slice(0, 3).map(function(p) { return p.split('/').pop(); });
+            document.getElementById('projectList').textContent = projNames.join(', ') + (projects.length > 3 ? ' +' + (projects.length - 3) + ' more' : '');
+
+            document.getElementById('worktreeCount').textContent = worktreePaths.length;
+            document.getElementById('worktreeList').textContent = worktreePaths.length > 0
+                ? worktreePaths.map(function(w) { return w.split('/').pop(); }).slice(0, 2).join(', ')
+                : 'None active';
+
+            document.getElementById('branchCount').textContent = branches.length;
+            document.getElementById('branchList').textContent = branches.slice(0, 3).join(', ') + (branches.length > 3 ? ' +' + (branches.length - 3) : '');
+
+            // Cluster by project
+            var clusters = {};
+            peers.forEach(function(p) {
+                var proj = extractProject(p.cwd);
+                if (!clusters[proj]) clusters[proj] = [];
+                clusters[proj].push(p);
+            });
+
+            var clusterGrid = document.getElementById('clusterGrid');
+            clusterGrid.textContent = '';
+
+            var sortedProjects = Object.keys(clusters).sort(function(a, b) {
+                return clusters[b].length - clusters[a].length;
+            });
+
+            sortedProjects.forEach(function(proj) {
+                var agents = clusters[proj];
+                var card = el('div', 'cluster-card');
+                card.appendChild(el('div', 'cluster-name', proj));
+                card.appendChild(el('div', 'cluster-count', agents.length + ' agent' + (agents.length !== 1 ? 's' : '')));
+
+                var chipsContainer = el('div', 'cluster-agents');
+                agents.forEach(function(a) {
+                    var chip = el('span', 'cluster-agent-chip', a.id);
+                    chip.title = a.summary || 'No summary';
+                    chipsContainer.appendChild(chip);
+                });
+                card.appendChild(chipsContainer);
+                clusterGrid.appendChild(card);
+            });
+
+            // Agent table
+            var list = document.getElementById('agentList');
+            list.textContent = '';
+
+            if (count === 0) {
+                var empty = el('div', 'empty-state');
+                empty.appendChild(el('div', 'empty-icon', '\uD83D\uDE34'));
+                empty.appendChild(el('div', 'empty-msg', 'No agents running'));
+                list.appendChild(empty);
+                return;
+            }
+
+            var sorted = peers.slice().sort(function(a, b) {
+                var projA = extractProject(a.cwd);
+                var projB = extractProject(b.cwd);
+                if (projA !== projB) return projA.localeCompare(projB);
+                return new Date(a.registered_at) - new Date(b.registered_at);
+            });
+
+            sorted.forEach(function(peer) {
+                var project = extractProject(peer.cwd);
+                var branch = extractBranch(peer.cwd) || 'main';
+                var wt = isWorktree(peer.cwd);
+                var uptime = formatUptime(peer.registered_at);
+
+                var row = el('div', 'agent-row');
+
+                // ID
+                row.appendChild(el('span', 'agent-id', peer.id));
+
+                // Project
+                var projSpan = el('span', 'agent-project', project);
+                projSpan.title = peer.cwd;
+                if (wt) {
+                    var badge = el('span', 'agent-wt-badge', 'WT');
+                    projSpan.appendChild(badge);
+                }
+                row.appendChild(projSpan);
+
+                // Branch
+                var branchSpan = el('span', 'agent-branch');
+                branchSpan.title = branch;
+                var icon = el('span', 'branch-icon', '\u2625');
+                branchSpan.appendChild(icon);
+                branchSpan.appendChild(document.createTextNode(' ' + branch));
+                row.appendChild(branchSpan);
+
+                // TTY + Uptime
+                var ttyCell = el('span', '');
+                ttyCell.appendChild(el('span', 'agent-tty', peer.tty || '-'));
+                ttyCell.appendChild(el('span', 'agent-uptime', uptime));
+                row.appendChild(ttyCell);
+
+                // Summary
+                var summarySpan;
+                if (peer.summary) {
+                    summarySpan = el('span', 'agent-summary', peer.summary);
+                } else {
+                    summarySpan = el('span', 'agent-summary empty', 'No summary set');
+                }
+                row.appendChild(summarySpan);
+
+                list.appendChild(row);
+            });
+        }
+
+        // ---- Poll loop ----
+        function poll() {
+            fetchPeers().then(render);
+        }
+
+        poll();
+        setInterval(poll, POLL_INTERVAL);
+    </script>
+</body>
+</html>

@@ -374,7 +374,6 @@
     (function() {
         'use strict';
 
-        var ACTIVE_THRESHOLD_MS = 15000;
         var POLL_INTERVAL = 5000;
         var selectedId = null;
 
@@ -391,7 +390,8 @@
             return Math.abs(h);
         }
         function getColors(id) { return PALETTE[hashId(id) % PALETTE.length]; }
-        function isActive(peer) { return (Date.now() - new Date(peer.last_seen).getTime()) < ACTIVE_THRESHOLD_MS; }
+        // Activity is determined server-side via CPU usage (> 1%)
+        function isActive(peer) { return !!peer.isActive; }
         function extractProject(cwd) {
             var m = cwd.match(/\/proj\/(.+)$/);
             return m ? m[1] : cwd.split('/').slice(-2).join('/');

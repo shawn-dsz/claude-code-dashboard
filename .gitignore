@@ -14,3 +14,6 @@ data.json
 
 # Local Claude settings
 .claude/settings.local.json
+
+# Claude Code worktree sessions
+.claude/worktrees/

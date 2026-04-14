@@ -14,12 +14,98 @@ const path = require('path');
 const { execFile } = require('child_process');
 
 const { readdir, readFile, stat } = require('fs/promises');
+const { execFileSync } = require('child_process');
 
 const PORT = parseInt(process.argv[2] || '8080', 10);
 const BROKER_HOST = '127.0.0.1';
 const BROKER_PORT = 7899;
 const ROOT = __dirname;
 const PROJECTS_DIR = path.join(process.env.HOME, '.claude', 'projects');
+const SUPERSET_DIR = path.join(process.env.HOME, '.superset');
+const SUPERSET_DB = path.join(SUPERSET_DIR, 'local.db');
+const SUPERSET_STATE = path.join(SUPERSET_DIR, 'app-state.json');
+
+/**
+ * Read Superset workspace data and build a CWD-to-workspace map.
+ * Combines local.db (workspaces, worktrees, projects) with app-state.json (tab names).
+ */
+async function getSupersetWorkspaces() {
+  try {
+    // Read workspace/worktree/project data from SQLite via CLI
+    const sql = `
+      SELECT
+        w.id as workspace_id,
+        w.name as workspace_name,
+        w.branch,
+        w.type,
+        p.main_repo_path as project_path,
+        p.name as project_name,
+        wt.path as worktree_path
+      FROM workspaces w
+      JOIN projects p ON w.project_id = p.id
+      LEFT JOIN worktrees wt ON w.worktree_id = wt.id
+      WHERE w.deleting_at IS NULL
+    `;
+    const dbOutput = execFileSync('sqlite3', ['-json', SUPERSET_DB, sql], { encoding: 'utf8', timeout: 3000 });
+    const rows = JSON.parse(dbOutput);
+
+    // Read tab state for session names
+    const stateData = JSON.parse(await readFile(SUPERSET_STATE, 'utf8'));
+    const tabs = stateData?.tabsState?.tabs || [];
+
+    // Build workspace_id -> tab name map
+    const tabNames = {};
+    for (const tab of tabs) {
+      if (tab.workspaceId && tab.name) {
+        // Prefer the most descriptive tab name (Claude Code sessions have session names)
+        const existing = tabNames[tab.workspaceId];
+        if (!existing || (tab.name.includes('Claude Code') === false && tab.name.length > 3)) {
+          tabNames[tab.workspaceId] = tab.name;
+        }
+      }
+    }
+
+    // Build CWD -> workspace info map
+    const cwdMap = {};
+    for (const row of rows) {
+      const cwd = row.worktree_path || row.project_path;
+      if (!cwd) continue;
+      cwdMap[cwd] = {
+        workspaceId: row.workspace_id,
+        workspaceName: row.workspace_name,
+        projectName: row.project_name,
+        branch: row.branch,
+        type: row.type,
+        tabName: tabNames[row.workspace_id] || null,
+      };
+    }
+
+    return cwdMap;
+  } catch {
+    return {};
+  }
+}
+
+/**
+ * Enrich peers with Superset workspace data (tab names, workspace info).
+ */
+async function enrichWithSupersetData(peers) {
+  const cwdMap = await getSupersetWorkspaces();
+  return peers.map(p => {
+    const ws = cwdMap[p.cwd];
+    if (ws) {
+      return {
+        ...p,
+        supersetTabName: ws.tabName,
+        supersetProject: ws.projectName,
+        supersetWorkspace: ws.workspaceName,
+        supersetBranch: ws.branch,
+        supersetType: ws.type,
+      };
+    }
+    return p;
+  });
+}
 
 /**
  * Look up session info for a given CWD: topic and last user instruction timestamp.
@@ -218,7 +304,7 @@ const server = http.createServer((req, res) => {
             const parentPids = [...new Set(Object.values(ppidMap).filter(p => p !== '1' && p !== '0'))];
             if (parentPids.length === 0) {
               const cpuEnriched = peers.map(p => ({ ...p, cpu: 0, isActive: false }));
-              enrichWithSessionInfo(cpuEnriched).then(enriched => {
+              enrichWithSessionInfo(cpuEnriched).then(e => enrichWithSupersetData(e)).then(enriched => {
                 res.writeHead(200, { 'Content-Type': 'application/json' });
                 res.end(JSON.stringify(enriched));
               });
@@ -262,7 +348,7 @@ const server = http.createServer((req, res) => {
                     const cpu = ppid ? (cpuMap[ppid] || 0) : 0;
                     return { ...p, cpu: Math.round(cpu * 10) / 10, parentPid: ppid ? parseInt(ppid) : null, isActive: cpu > 5 };
                   });
-                  enrichWithSessionInfo(cpuEnriched).then(enriched => {
+                  enrichWithSessionInfo(cpuEnriched).then(e => enrichWithSupersetData(e)).then(enriched => {
                     res.writeHead(200, { 'Content-Type': 'application/json' });
                     res.end(JSON.stringify(enriched));
                   });

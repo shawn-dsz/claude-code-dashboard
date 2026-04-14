@@ -4,9 +4,14 @@
   "description": "Claude Code usage analytics dashboard with session caching",
   "main": "build-session-cache.js",
   "scripts": {
-    "build-cache": "node build-session-cache.js .cache/sessions.db"
+    "build-cache": "node build-session-cache.js .cache/sessions.db",
+    "test": "npx vitest run",
+    "test:watch": "npx vitest"
   },
   "dependencies": {
     "sql.js": "^1.10.3"
+  },
+  "devDependencies": {
+    "vitest": "^4.1.4"
   }
 }

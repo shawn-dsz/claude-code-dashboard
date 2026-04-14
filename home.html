@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Claude Agents — Live</title>
+    <title>Pixel Agents - Live</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
 
@@ -80,7 +80,7 @@
         .rooms-container { padding: 0 24px 24px; }
         .rooms-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+            grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
             gap: 16px;
         }
 
@@ -105,7 +105,8 @@
         .room-count { color: var(--text-dim); font-family: var(--ui); font-size: 10px; }
         .room-body {
             display: flex;
-            min-height: 120px;
+            min-height: 140px;
+            position: relative;
         }
 
         /* Office side */
@@ -114,9 +115,10 @@
             padding: 10px;
             border-right: 1px dashed var(--border);
             position: relative;
+            background: linear-gradient(180deg, rgba(0,214,143,0.03) 0%, transparent 100%);
         }
         .room-office-label {
-            font-size: 8px;
+            font-size: 7px;
             color: var(--text-muted);
             text-transform: uppercase;
             letter-spacing: 1px;
@@ -129,9 +131,10 @@
             flex: 1;
             padding: 10px;
             position: relative;
+            background: linear-gradient(180deg, rgba(123,97,255,0.03) 0%, transparent 100%);
         }
         .room-bedroom-label {
-            font-size: 8px;
+            font-size: 7px;
             color: var(--text-muted);
             text-transform: uppercase;
             letter-spacing: 1px;
@@ -139,29 +142,78 @@
             font-family: var(--pixel-font);
         }
 
-        /* ---- DESK (office) ---- */
-        .desk-slot {
+        /* ---- AGENT SLOT (shared) ---- */
+        .agent-slot {
             display: flex;
             align-items: center;
-            gap: 6px;
-            margin-bottom: 6px;
-            height: 32px;
+            gap: 8px;
+            margin-bottom: 8px;
+            min-height: 42px;
             cursor: pointer;
-            border-radius: 4px;
-            padding: 2px 4px;
-            transition: background .1s;
+            border-radius: 6px;
+            padding: 4px 6px;
+            transition: background .15s;
+            position: relative;
         }
-        .desk-slot:hover { background: var(--bg-card-hover); }
-        .desk-slot.selected { background: #7b61ff18; }
+        .agent-slot:hover { background: var(--bg-card-hover); }
+        .agent-slot.selected { background: #7b61ff18; }
 
-        .desk-sprite { width: 24px; height: 24px; flex-shrink: 0; image-rendering: pixelated; }
+        .agent-sprite { width: 32px; height: 32px; flex-shrink: 0; image-rendering: pixelated; }
+
+        /* Walking agent overlay */
+        .agent-walking {
+            position: absolute;
+            z-index: 10;
+            pointer-events: none;
+        }
+        .agent-walking canvas { image-rendering: pixelated; }
+
+        /* Agent info */
+        .agent-info { flex: 1; min-width: 0; overflow: hidden; }
+        .agent-name {
+            font-family: var(--pixel-font);
+            font-size: 8px;
+            color: var(--text);
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .agent-name .name-colour {
+            display: inline-block;
+            width: 6px; height: 6px;
+            border-radius: 50%;
+            margin-right: 4px;
+            vertical-align: middle;
+        }
+        .agent-topic {
+            font-size: 8px;
+            color: var(--text-dim);
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            max-width: 180px;
+            margin-top: 2px;
+        }
+        .agent-idle-since {
+            font-size: 7px;
+            color: var(--text-muted);
+            font-family: var(--pixel-font);
+            margin-top: 2px;
+        }
+
+        /* Desk scene */
+        .desk-scene {
+            display: flex;
+            align-items: flex-end;
+            gap: 2px;
+            flex-shrink: 0;
+        }
         .desk-monitor {
-            width: 36px; height: 24px;
+            width: 28px; height: 20px;
             background: #0a0e1a;
             border: 2px solid var(--border-bright);
             border-radius: 2px;
             position: relative;
-            flex-shrink: 0;
             overflow: hidden;
         }
         .desk-monitor-screen {
@@ -177,30 +229,6 @@
             background: var(--green);
             opacity: 0.6;
         }
-        .desk-monitor-stand {
-            width: 8px; height: 3px;
-            background: var(--border-bright);
-            margin: 0 auto;
-        }
-        .desk-id {
-            font-family: var(--mono);
-            font-size: 9px;
-            color: var(--text-dim);
-            flex: 1;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-        }
-
-        .desk-topic, .bed-topic {
-            font-size: 8px;
-            color: var(--text-muted);
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-            max-width: 160px;
-        }
-        .desk-topic { color: var(--text-dim); }
 
         /* Typing animation on monitor */
         @keyframes typing {
@@ -208,47 +236,37 @@
             50% { width: 80%; }
             100% { width: 0; }
         }
-        .desk-slot.working .desk-monitor-line {
+        .agent-slot.working .desk-monitor-line {
             animation: typing 1.5s steps(6) infinite;
         }
-        .desk-slot.working .desk-monitor-line:nth-child(2) { animation-delay: 0.3s; }
-        .desk-slot.working .desk-monitor-line:nth-child(3) { animation-delay: 0.6s; }
+        .agent-slot.working .desk-monitor-line:nth-child(2) { animation-delay: 0.3s; }
+        .agent-slot.working .desk-monitor-line:nth-child(3) { animation-delay: 0.6s; }
 
-        /* ---- BED (bedroom) ---- */
-        .bed-slot {
+        /* Bed scene */
+        .bed-scene {
             display: flex;
             align-items: center;
-            gap: 6px;
-            margin-bottom: 6px;
-            height: 32px;
-            cursor: pointer;
-            border-radius: 4px;
-            padding: 2px 4px;
-            transition: background .1s;
+            gap: 4px;
+            flex-shrink: 0;
         }
-        .bed-slot:hover { background: var(--bg-card-hover); }
-        .bed-slot.selected { background: #7b61ff18; }
-
-        .bed-sprite { width: 24px; height: 24px; flex-shrink: 0; image-rendering: pixelated; }
         .bed-frame {
-            width: 40px; height: 20px;
+            width: 36px; height: 18px;
             background: #1a1f30;
             border: 1px solid var(--border);
             border-radius: 3px;
             position: relative;
-            flex-shrink: 0;
         }
         .bed-pillow {
             position: absolute;
-            left: 2px; top: 3px;
-            width: 10px; height: 14px;
+            left: 2px; top: 2px;
+            width: 8px; height: 14px;
             background: #2a3050;
             border-radius: 2px;
         }
         .bed-blanket {
             position: absolute;
-            right: 2px; top: 4px;
-            width: 24px; height: 12px;
+            right: 2px; top: 3px;
+            width: 22px; height: 12px;
             border-radius: 2px;
             opacity: 0.6;
         }
@@ -262,21 +280,12 @@
             0%,100% { opacity: .3; transform: translateY(0); }
             50% { opacity: .8; transform: translateY(-3px); }
         }
-        .bed-id {
-            font-family: var(--mono);
-            font-size: 9px;
-            color: var(--text-muted);
-            flex: 1;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-        }
 
         /* ---- SIDE PANEL ---- */
         .side-panel {
             position: fixed;
             top: 0; right: 0;
-            width: 360px;
+            width: 380px;
             height: 100vh;
             background: var(--bg-card);
             border-left: 1px solid var(--border);
@@ -318,6 +327,26 @@
         }
         .side-panel-overlay.open { display: block; }
 
+        /* Detail panel - agent header */
+        .sd-agent-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 16px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid var(--border);
+        }
+        .sd-agent-header canvas { image-rendering: pixelated; }
+        .sd-agent-name {
+            font-family: var(--pixel-font);
+            font-size: 10px;
+            color: var(--text);
+        }
+        .sd-agent-status {
+            font-size: 10px;
+            margin-top: 4px;
+        }
+
         .sd-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid var(--border); font-size: 11px; }
         .sd-row:last-child { border-bottom: none; }
         .sd-key { color: var(--text-dim); flex-shrink: 0; }
@@ -337,7 +366,7 @@
 <body>
     <div class="topbar">
         <div class="topbar-left">
-            <span class="logo">CLAUDE AGENTS</span>
+            <span class="logo">PIXEL AGENTS</span>
             <div class="topbar-status">
                 <span class="live-dot"></span>
                 <span id="statusText">Connecting...</span>
@@ -389,20 +418,12 @@
         var POLL_INTERVAL = 5000;
         var selectedId = null;
 
-        var PALETTE = [
-            ['#ff5555','#cc3333'], ['#00d68f','#009966'], ['#7b61ff','#5533cc'],
-            ['#4da6ff','#3377cc'], ['#ffaa33','#cc8800'], ['#ff79c6','#cc5599'],
-            ['#50fa7b','#33cc55'], ['#f1fa8c','#cccc44'], ['#8be9fd','#55bbcc'],
-            ['#bd93f9','#9966dd'],
-        ];
+        // Track previous state for walk transitions
+        var prevActiveState = {}; // id -> boolean (was active last poll)
+        // Track walking agents for animation
+        var walkingAgents = {}; // id -> { roomEl, startSide, progress, frameIndex, peer }
 
-        function hashId(id) {
-            var h = 0;
-            for (var i = 0; i < id.length; i++) h = ((h << 5) - h + id.charCodeAt(i)) | 0;
-            return Math.abs(h);
-        }
-        function getColors(id) { return PALETTE[hashId(id) % PALETTE.length]; }
-        // Activity is determined server-side via CPU usage (> 1%)
+        // ---- HELPERS ----
         function isActive(peer) { return !!peer.isActive; }
         function extractProject(cwd) {
             var m = cwd.match(/\/proj\/(.+)$/);
@@ -420,9 +441,7 @@
             return Math.floor(h / 24) + 'd ' + (h % 24) + 'h';
         }
         function getSessionName(peer) {
-            // Prefer Superset tab name (cleaned), then sessionTopic, then null
             if (peer.supersetTabName) {
-                // Strip leading status dots and "Claude Code" prefix
                 var name = peer.supersetTabName.replace(/^[\u2800-\u28FF\u2733\s]+/, '').trim();
                 if (name && name !== 'Claude Code' && name.length > 2) return name;
             }
@@ -440,6 +459,26 @@
             if (h < 24) return h + 'h ' + (m % 60) + 'm ago';
             return Math.floor(h / 24) + 'd ago';
         }
+        function formatIdleDuration(ts) {
+            if (!ts) return 'never worked';
+            var ms = Date.now() - new Date(ts).getTime();
+            if (ms < 0) return 'just now';
+            var s = Math.floor(ms / 1000);
+            if (s < 60) return 'idle ' + s + 's';
+            var m = Math.floor(s / 60);
+            if (m < 60) return 'idle ' + m + 'm';
+            var h = Math.floor(m / 60);
+            if (h < 24) return 'idle ' + h + 'h ' + (m % 60) + 'm';
+            return 'idle ' + Math.floor(h / 24) + 'd ' + (h % 24) + 'h';
+        }
+        function getColors(peer) {
+            // Use server-provided persistent colours
+            if (peer.agentColours) return peer.agentColours;
+            return ['#7b61ff', '#5533cc'];
+        }
+        function getAgentName(peer) {
+            return peer.agentName || peer.id.slice(0, 8);
+        }
         function el(tag, cls, txt) {
             var n = document.createElement(tag);
             if (cls) n.className = cls;
@@ -447,47 +486,198 @@
             return n;
         }
 
-        // Draw small sprite head for desk/bed
-        function drawHead(canvas, color) {
+        // ---- PIXEL ART SPRITE DRAWING ----
+        // Draw a more detailed pixel character (front-facing, 32x32 canvas)
+        function drawCharacter(canvas, color, state) {
             var ctx = canvas.getContext('2d');
-            var s = 3;
-            ctx.clearRect(0, 0, 24, 24);
+            var p = 2; // pixel size
+            ctx.clearRect(0, 0, 32, 32);
             ctx.imageSmoothingEnabled = false;
-            // Head
+
+            var isTyping = (state === 'type');
+            var isSleeping = (state === 'sleep');
+            var isWalking = (state === 'walk');
+
+            // Hair
+            ctx.fillStyle = darkenColor(color, 0.4);
+            ctx.fillRect(5*p, 0*p, 6*p, 2*p);
+            ctx.fillRect(4*p, 1*p, 1*p, 1*p);
+            ctx.fillRect(11*p, 1*p, 1*p, 1*p);
+
+            // Head (skin)
             ctx.fillStyle = '#ffd5b0';
-            ctx.fillRect(3*s, 0, 2*s, 2*s);
+            ctx.fillRect(5*p, 2*p, 6*p, 5*p);
+            // Ears
+            ctx.fillRect(4*p, 3*p, 1*p, 2*p);
+            ctx.fillRect(11*p, 3*p, 1*p, 2*p);
+
             // Eyes
-            ctx.fillStyle = '#222';
-            ctx.fillRect(3*s, s*0.8, s*0.5, s*0.4);
-            ctx.fillRect(4.3*s, s*0.8, s*0.5, s*0.4);
-            // Body
+            if (isSleeping) {
+                // Closed eyes (horizontal lines)
+                ctx.fillStyle = '#555';
+                ctx.fillRect(6*p, 4*p, 2*p, 1*p);
+                ctx.fillRect(9*p, 4*p, 2*p, 1*p);
+            } else {
+                ctx.fillStyle = '#222';
+                ctx.fillRect(6*p, 3.5*p, 1.5*p, 1.5*p);
+                ctx.fillRect(9*p, 3.5*p, 1.5*p, 1.5*p);
+                // Eye highlights
+                ctx.fillStyle = '#fff';
+                ctx.fillRect(6.5*p, 3.5*p, 0.5*p, 0.5*p);
+                ctx.fillRect(9.5*p, 3.5*p, 0.5*p, 0.5*p);
+            }
+
+            // Mouth
+            if (!isSleeping) {
+                ctx.fillStyle = '#c4937a';
+                ctx.fillRect(7.5*p, 5.5*p, 1*p, 0.5*p);
+            }
+
+            // Body (shirt)
             ctx.fillStyle = color;
-            ctx.fillRect(2*s, 2*s, 4*s, 3*s);
+            ctx.fillRect(4*p, 7*p, 8*p, 5*p);
+
             // Arms
-            ctx.fillStyle = color;
-            ctx.globalAlpha = 0.7;
-            ctx.fillRect(1*s, 2.5*s, s, 2*s);
-            ctx.fillRect(6*s, 2.5*s, s, 2*s);
-            ctx.globalAlpha = 1;
+            if (isTyping) {
+                // Arms forward (typing)
+                ctx.fillStyle = color;
+                ctx.fillRect(2*p, 7*p, 2*p, 3*p);
+                ctx.fillRect(12*p, 7*p, 2*p, 3*p);
+                // Hands (skin) reaching forward
+                ctx.fillStyle = '#ffd5b0';
+                ctx.fillRect(2*p, 10*p, 2*p, 1*p);
+                ctx.fillRect(12*p, 10*p, 2*p, 1*p);
+            } else if (isWalking) {
+                // One arm forward, one back
+                ctx.fillStyle = color;
+                ctx.fillRect(2*p, 7*p, 2*p, 4*p);
+                ctx.fillRect(12*p, 8*p, 2*p, 3*p);
+                ctx.fillStyle = '#ffd5b0';
+                ctx.fillRect(2*p, 11*p, 2*p, 1*p);
+                ctx.fillRect(12*p, 11*p, 2*p, 1*p);
+            } else {
+                // Arms at sides
+                ctx.fillStyle = color;
+                ctx.fillRect(2*p, 7*p, 2*p, 4*p);
+                ctx.fillRect(12*p, 7*p, 2*p, 4*p);
+                // Hands
+                ctx.fillStyle = '#ffd5b0';
+                ctx.fillRect(2*p, 11*p, 2*p, 1*p);
+                ctx.fillRect(12*p, 11*p, 2*p, 1*p);
+            }
+
+            // Legs (dark)
+            ctx.fillStyle = darkenColor(color, 0.5);
+            if (isWalking) {
+                // Walking legs - spread apart
+                ctx.fillRect(5*p, 12*p, 2*p, 3*p);
+                ctx.fillRect(9*p, 12*p, 2*p, 3*p);
+                // Shoes
+                ctx.fillStyle = '#333';
+                ctx.fillRect(4*p, 15*p, 3*p, 1*p);
+                ctx.fillRect(9*p, 15*p, 3*p, 1*p);
+            } else {
+                ctx.fillRect(5*p, 12*p, 3*p, 3*p);
+                ctx.fillRect(8*p, 12*p, 3*p, 3*p);
+                // Shoes
+                ctx.fillStyle = '#333';
+                ctx.fillRect(4*p, 15*p, 4*p, 1*p);
+                ctx.fillRect(8*p, 15*p, 4*p, 1*p);
+            }
+
+            // Sleeping overlay
+            if (isSleeping) {
+                ctx.globalAlpha = 0.3;
+                ctx.fillStyle = '#000';
+                ctx.fillRect(0, 0, 32, 32);
+                ctx.globalAlpha = 1;
+            }
         }
 
-        function drawSleepingHead(canvas, color) {
+        // Walk frame alternation (for animation)
+        function drawCharacterWalkFrame(canvas, color, frame) {
             var ctx = canvas.getContext('2d');
-            var s = 3;
-            ctx.clearRect(0, 0, 24, 24);
+            var p = 2;
+            ctx.clearRect(0, 0, 32, 32);
             ctx.imageSmoothingEnabled = false;
+
+            // Hair
+            ctx.fillStyle = darkenColor(color, 0.4);
+            ctx.fillRect(5*p, 0*p, 6*p, 2*p);
+            ctx.fillRect(4*p, 1*p, 1*p, 1*p);
+            ctx.fillRect(11*p, 1*p, 1*p, 1*p);
+
             // Head
             ctx.fillStyle = '#ffd5b0';
-            ctx.fillRect(3*s, 0, 2*s, 2*s);
-            // Closed eyes (lines)
-            ctx.fillStyle = '#888';
-            ctx.fillRect(3*s, s*0.9, s*0.6, s*0.15);
-            ctx.fillRect(4.2*s, s*0.9, s*0.6, s*0.15);
+            ctx.fillRect(5*p, 2*p, 6*p, 5*p);
+            ctx.fillRect(4*p, 3*p, 1*p, 2*p);
+            ctx.fillRect(11*p, 3*p, 1*p, 2*p);
+
+            // Eyes
+            ctx.fillStyle = '#222';
+            ctx.fillRect(6*p, 3.5*p, 1.5*p, 1.5*p);
+            ctx.fillRect(9*p, 3.5*p, 1.5*p, 1.5*p);
+            ctx.fillStyle = '#fff';
+            ctx.fillRect(6.5*p, 3.5*p, 0.5*p, 0.5*p);
+            ctx.fillRect(9.5*p, 3.5*p, 0.5*p, 0.5*p);
+
+            // Mouth
+            ctx.fillStyle = '#c4937a';
+            ctx.fillRect(7.5*p, 5.5*p, 1*p, 0.5*p);
+
             // Body
             ctx.fillStyle = color;
-            ctx.globalAlpha = 0.5;
-            ctx.fillRect(2*s, 2*s, 4*s, 3*s);
-            ctx.globalAlpha = 1;
+            // Slight bob
+            var bobY = (frame % 2 === 0) ? 0 : -0.5*p;
+            ctx.fillRect(4*p, 7*p + bobY, 8*p, 5*p);
+
+            // Arms - swing based on frame
+            ctx.fillStyle = color;
+            if (frame % 4 < 2) {
+                ctx.fillRect(2*p, 7*p + bobY, 2*p, 4*p);
+                ctx.fillRect(12*p, 8*p + bobY, 2*p, 3*p);
+            } else {
+                ctx.fillRect(2*p, 8*p + bobY, 2*p, 3*p);
+                ctx.fillRect(12*p, 7*p + bobY, 2*p, 4*p);
+            }
+            // Hands
+            ctx.fillStyle = '#ffd5b0';
+            if (frame % 4 < 2) {
+                ctx.fillRect(2*p, 11*p + bobY, 2*p, 1*p);
+                ctx.fillRect(12*p, 11*p + bobY, 2*p, 1*p);
+            } else {
+                ctx.fillRect(2*p, 11*p + bobY, 2*p, 1*p);
+                ctx.fillRect(12*p, 11*p + bobY, 2*p, 1*p);
+            }
+
+            // Legs - alternate
+            ctx.fillStyle = darkenColor(color, 0.5);
+            if (frame % 4 < 2) {
+                ctx.fillRect(5*p, 12*p + bobY, 2*p, 3*p);
+                ctx.fillRect(9*p, 12.5*p + bobY, 2*p, 2.5*p);
+            } else {
+                ctx.fillRect(5*p, 12.5*p + bobY, 2*p, 2.5*p);
+                ctx.fillRect(9*p, 12*p + bobY, 2*p, 3*p);
+            }
+            // Shoes
+            ctx.fillStyle = '#333';
+            if (frame % 4 < 2) {
+                ctx.fillRect(4*p, 15*p + bobY, 3*p, 1*p);
+                ctx.fillRect(9*p, 14.5*p + bobY, 3*p, 1*p);
+            } else {
+                ctx.fillRect(4*p, 14.5*p + bobY, 3*p, 1*p);
+                ctx.fillRect(9*p, 15*p + bobY, 3*p, 1*p);
+            }
+        }
+
+        function darkenColor(hex, amount) {
+            var r = parseInt(hex.slice(1,3), 16);
+            var g = parseInt(hex.slice(3,5), 16);
+            var b = parseInt(hex.slice(5,7), 16);
+            r = Math.round(r * (1 - amount));
+            g = Math.round(g * (1 - amount));
+            b = Math.round(b * (1 - amount));
+            return '#' + ((1<<24) + (r<<16) + (g<<8) + b).toString(16).slice(1);
         }
 
         // ---- BUILD ROOM ----
@@ -497,7 +687,13 @@
 
             var activeAgents = [];
             var idleAgents = [];
+            var walkingIds = {};
             for (var i = 0; i < agents.length; i++) {
+                // Skip agents that are currently walking (animated between sides)
+                if (walkingAgents[agents[i].id]) {
+                    walkingIds[agents[i].id] = true;
+                    continue;
+                }
                 if (isActive(agents[i])) activeAgents.push(agents[i]);
                 else idleAgents.push(agents[i]);
             }
@@ -510,6 +706,7 @@
 
             // Body: office + bedroom
             var body = el('div', 'room-body');
+            body.setAttribute('data-project', projectKey);
 
             // Office side
             var office = el('div', 'room-office');
@@ -517,9 +714,9 @@
             for (var a = 0; a < activeAgents.length; a++) {
                 office.appendChild(buildDeskSlot(activeAgents[a]));
             }
-            if (activeAgents.length === 0) {
+            if (activeAgents.length === 0 && Object.keys(walkingIds).length === 0) {
                 var emptyOffice = el('div', '', 'empty');
-                emptyOffice.style.cssText = 'font-size:9px;color:var(--text-muted);padding:8px 0;';
+                emptyOffice.style.cssText = 'font-size:8px;color:var(--text-muted);padding:8px 0;font-family:var(--pixel-font);';
                 office.appendChild(emptyOffice);
             }
             body.appendChild(office);
@@ -530,9 +727,9 @@
             for (var b = 0; b < idleAgents.length; b++) {
                 bedroom.appendChild(buildBedSlot(idleAgents[b]));
             }
-            if (idleAgents.length === 0) {
+            if (idleAgents.length === 0 && Object.keys(walkingIds).length === 0) {
                 var emptyBed = el('div', '', 'empty');
-                emptyBed.style.cssText = 'font-size:9px;color:var(--text-muted);padding:8px 0;';
+                emptyBed.style.cssText = 'font-size:8px;color:var(--text-muted);padding:8px 0;font-family:var(--pixel-font);';
                 bedroom.appendChild(emptyBed);
             }
             body.appendChild(bedroom);
@@ -541,40 +738,46 @@
             return room;
         }
 
-        // ---- DESK SLOT ----
+        // ---- DESK SLOT (working agent) ----
         function buildDeskSlot(peer) {
-            var colors = getColors(peer.id);
-            var slot = el('div', 'desk-slot working');
+            var colors = getColors(peer);
+            var slot = el('div', 'agent-slot working');
             if (peer.id === selectedId) slot.classList.add('selected');
+            slot.setAttribute('data-agent-id', peer.id);
 
             slot.addEventListener('click', function() { selectAgent(peer.id, peer); });
 
-            // Sprite
-            var canvas = document.createElement('canvas');
-            canvas.width = 24; canvas.height = 24;
-            canvas.className = 'desk-sprite';
-            drawHead(canvas, colors[0]);
-            slot.appendChild(canvas);
+            // Desk scene: sprite + monitor
+            var scene = el('div', 'desk-scene');
 
-            // Monitor
+            var canvas = document.createElement('canvas');
+            canvas.width = 32; canvas.height = 32;
+            canvas.className = 'agent-sprite';
+            drawCharacter(canvas, colors[0], 'type');
+            scene.appendChild(canvas);
+
             var monitor = el('div', 'desk-monitor');
             var screen = el('div', 'desk-monitor-screen');
             screen.appendChild(el('div', 'desk-monitor-line'));
             screen.appendChild(el('div', 'desk-monitor-line'));
             screen.appendChild(el('div', 'desk-monitor-line'));
             monitor.appendChild(screen);
-            slot.appendChild(monitor);
-            slot.appendChild(el('div', '', ''));  // stand space
-            var stand = el('div', 'desk-monitor-stand');
-            // append stand after monitor visually... actually it's fine inline
+            scene.appendChild(monitor);
 
-            // ID + topic
-            var info = el('div', '');
-            info.style.cssText = 'flex:1;min-width:0;overflow:hidden;';
-            info.appendChild(el('div', 'desk-id', peer.id));
+            slot.appendChild(scene);
+
+            // Name + topic
+            var info = el('div', 'agent-info');
+            var nameEl = el('div', 'agent-name');
+            var dot = el('span', 'name-colour');
+            dot.style.background = colors[0];
+            nameEl.appendChild(dot);
+            nameEl.appendChild(document.createTextNode(getAgentName(peer)));
+            info.appendChild(nameEl);
+
             var sessionName = getSessionName(peer);
             if (sessionName) {
-                var topic = el('div', 'desk-topic', sessionName);
+                var topic = el('div', 'agent-topic', sessionName);
                 topic.title = sessionName;
                 info.appendChild(topic);
             }
@@ -583,45 +786,181 @@
             return slot;
         }
 
-        // ---- BED SLOT ----
+        // ---- BED SLOT (sleeping agent) ----
         function buildBedSlot(peer) {
-            var colors = getColors(peer.id);
-            var slot = el('div', 'bed-slot');
+            var colors = getColors(peer);
+            var slot = el('div', 'agent-slot');
             if (peer.id === selectedId) slot.classList.add('selected');
+            slot.setAttribute('data-agent-id', peer.id);
 
             slot.addEventListener('click', function() { selectAgent(peer.id, peer); });
 
-            // Sleeping sprite
-            var canvas = document.createElement('canvas');
-            canvas.width = 24; canvas.height = 24;
-            canvas.className = 'bed-sprite';
-            drawSleepingHead(canvas, colors[0]);
-            slot.appendChild(canvas);
+            // Bed scene: sprite + bed + zzz
+            var scene = el('div', 'bed-scene');
 
-            // Bed
+            var canvas = document.createElement('canvas');
+            canvas.width = 32; canvas.height = 32;
+            canvas.className = 'agent-sprite';
+            drawCharacter(canvas, colors[0], 'sleep');
+            scene.appendChild(canvas);
+
             var bed = el('div', 'bed-frame');
             bed.appendChild(el('div', 'bed-pillow'));
             var blanket = el('div', 'bed-blanket');
             blanket.style.background = colors[0];
             bed.appendChild(blanket);
-            slot.appendChild(bed);
+            scene.appendChild(bed);
 
-            // zzz
-            slot.appendChild(el('span', 'bed-zzz', 'zzz'));
+            scene.appendChild(el('span', 'bed-zzz', 'zzz'));
 
-            // ID + topic
-            var info = el('div', '');
-            info.style.cssText = 'flex:1;min-width:0;overflow:hidden;';
-            info.appendChild(el('div', 'bed-id', peer.id));
+            slot.appendChild(scene);
+
+            // Name + topic + idle time
+            var info = el('div', 'agent-info');
+            var nameEl = el('div', 'agent-name');
+            var dot = el('span', 'name-colour');
+            dot.style.background = colors[0];
+            nameEl.appendChild(dot);
+            nameEl.appendChild(document.createTextNode(getAgentName(peer)));
+            info.appendChild(nameEl);
+
             var sessionName = getSessionName(peer);
             if (sessionName) {
-                var topic = el('div', 'bed-topic', sessionName);
+                var topic = el('div', 'agent-topic', sessionName);
                 topic.title = sessionName;
                 info.appendChild(topic);
             }
+
+            // Idle since
+            var idleText = formatIdleDuration(peer.lastActiveAt);
+            info.appendChild(el('div', 'agent-idle-since', idleText));
+
             slot.appendChild(info);
 
             return slot;
+        }
+
+        // ---- WALKING ANIMATION ----
+        var walkAnimFrame = 0;
+        var walkAnimTimer = null;
+
+        function startWalkAnimation(peerId, peer, direction) {
+            // direction: 'to-office' (bedroom -> office) or 'to-bed' (office -> bedroom)
+            walkingAgents[peerId] = {
+                direction: direction,
+                progress: 0,
+                frameIndex: 0,
+                peer: peer,
+            };
+
+            if (!walkAnimTimer) {
+                walkAnimTimer = setInterval(tickWalkAnimations, 50);
+            }
+        }
+
+        function tickWalkAnimations() {
+            var activeWalks = Object.keys(walkingAgents);
+            if (activeWalks.length === 0) {
+                clearInterval(walkAnimTimer);
+                walkAnimTimer = null;
+                return;
+            }
+
+            for (var i = 0; i < activeWalks.length; i++) {
+                var id = activeWalks[i];
+                var walk = walkingAgents[id];
+                walk.progress += 0.05; // ~1s total walk
+                walk.frameIndex++;
+
+                if (walk.progress >= 1) {
+                    delete walkingAgents[id];
+                    // Re-render rooms to show agent in new position
+                    if (lastPeers) renderRooms(lastPeers);
+                } else {
+                    // Update the walking overlay element
+                    var overlay = document.querySelector('.agent-walking[data-walk-id="' + id + '"]');
+                    if (overlay) {
+                        var body = overlay.parentElement;
+                        var bodyRect = body.getBoundingClientRect();
+                        var halfW = bodyRect.width / 2;
+                        var startX, endX;
+                        if (walk.direction === 'to-office') {
+                            startX = halfW + 20;
+                            endX = 20;
+                        } else {
+                            startX = 20;
+                            endX = halfW + 20;
+                        }
+                        var currentX = startX + (endX - startX) * easeInOut(walk.progress);
+                        var currentY = 30 + Math.sin(walk.progress * Math.PI) * -8;
+                        overlay.style.left = currentX + 'px';
+                        overlay.style.top = currentY + 'px';
+
+                        // Update sprite frame
+                        var canvas = overlay.querySelector('canvas');
+                        if (canvas) {
+                            drawCharacterWalkFrame(canvas, getColors(walk.peer)[0], walk.frameIndex);
+                        }
+                    }
+                }
+            }
+        }
+
+        function easeInOut(t) {
+            return t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
+        }
+
+        function renderWalkingOverlays() {
+            // Remove old overlays
+            var old = document.querySelectorAll('.agent-walking');
+            for (var i = 0; i < old.length; i++) old[i].remove();
+
+            var ids = Object.keys(walkingAgents);
+            for (var j = 0; j < ids.length; j++) {
+                var id = ids[j];
+                var walk = walkingAgents[id];
+                var peer = walk.peer;
+                var projectKey = extractProject(peer.cwd);
+
+                // Find the room body for this project
+                var roomBodies = document.querySelectorAll('.room-body[data-project="' + projectKey + '"]');
+                if (roomBodies.length === 0) continue;
+                var body = roomBodies[0];
+
+                var overlay = el('div', 'agent-walking');
+                overlay.setAttribute('data-walk-id', id);
+
+                var canvas = document.createElement('canvas');
+                canvas.width = 32; canvas.height = 32;
+                canvas.style.width = '32px';
+                canvas.style.height = '32px';
+                drawCharacterWalkFrame(canvas, getColors(peer)[0], walk.frameIndex);
+                overlay.appendChild(canvas);
+
+                // Name tag under sprite
+                var tag = el('div', '');
+                tag.style.cssText = 'font-family:var(--pixel-font);font-size:6px;color:var(--text-dim);text-align:center;white-space:nowrap;';
+                tag.textContent = getAgentName(peer);
+                overlay.appendChild(tag);
+
+                // Position
+                var bodyRect = body.getBoundingClientRect();
+                var halfW = bodyRect.width / 2;
+                var startX, endX;
+                if (walk.direction === 'to-office') {
+                    startX = halfW + 20;
+                    endX = 20;
+                } else {
+                    startX = 20;
+                    endX = halfW + 20;
+                }
+                var currentX = startX + (endX - startX) * easeInOut(walk.progress);
+                var currentY = 30 + Math.sin(walk.progress * Math.PI) * -8;
+                overlay.style.left = currentX + 'px';
+                overlay.style.top = currentY + 'px';
+
+                body.appendChild(overlay);
+            }
         }
 
         // ---- SELECTION + SIDE PANEL ----
@@ -637,8 +976,7 @@
             panelEl.classList.remove('open');
             overlayEl.classList.remove('open');
             selectedId = null;
-            // Remove selection highlights
-            var allSlots = document.querySelectorAll('.desk-slot, .bed-slot');
+            var allSlots = document.querySelectorAll('.agent-slot');
             for (var i = 0; i < allSlots.length; i++) allSlots[i].classList.remove('selected');
         }
 
@@ -650,8 +988,7 @@
             selectedId = id;
             if (!peer && allPeersMap[id]) peer = allPeersMap[id];
 
-            // Highlight in rooms
-            var allSlots = document.querySelectorAll('.desk-slot, .bed-slot');
+            var allSlots = document.querySelectorAll('.agent-slot');
             for (var i = 0; i < allSlots.length; i++) allSlots[i].classList.remove('selected');
 
             renderDetail(peer);
@@ -666,17 +1003,46 @@
             if (!peer) return;
 
             var active = isActive(peer);
+            var colors = getColors(peer);
+
+            // Agent header with large sprite
+            var header = el('div', 'sd-agent-header');
+            var bigCanvas = document.createElement('canvas');
+            bigCanvas.width = 32; bigCanvas.height = 32;
+            bigCanvas.style.width = '48px';
+            bigCanvas.style.height = '48px';
+            drawCharacter(bigCanvas, colors[0], active ? 'type' : 'sleep');
+            header.appendChild(bigCanvas);
+
+            var headerInfo = el('div', '');
+            headerInfo.appendChild(el('div', 'sd-agent-name', getAgentName(peer)));
+            var statusEl = el('div', 'sd-agent-status');
+            statusEl.style.color = active ? 'var(--green)' : 'var(--text-muted)';
+            statusEl.textContent = active ? 'Working' : 'Sleeping';
+            if (!active && peer.lastActiveAt) {
+                statusEl.textContent += ' - ' + formatIdleDuration(peer.lastActiveAt);
+            }
+            headerInfo.appendChild(statusEl);
+            header.appendChild(headerInfo);
+            panel.appendChild(header);
+
             var detail = el('div', '');
             var rows = [
-                ['ID', peer.id], ['Status', active ? 'Working' : 'Sleeping'],
-                ['Project', extractProject(peer.cwd)], ['Branch', extractBranch(peer.cwd)],
-                ['TTY', peer.tty || '-'], ['Uptime', formatUptime(peer.registered_at)],
+                ['Name', getAgentName(peer)],
+                ['ID', peer.id],
+                ['Status', active ? 'Working' : 'Sleeping'],
+                ['Project', extractProject(peer.cwd)],
+                ['Branch', extractBranch(peer.cwd)],
+                ['TTY', peer.tty || '-'],
+                ['Uptime', formatUptime(peer.registered_at)],
                 ['Worktree', isWorktree(peer.cwd) ? 'Yes' : 'No'],
                 ['Session Name', getSessionName(peer) || '(none)'],
                 ['Last Instruction', formatTimeSince(peer.lastInstructionAt) || '(unknown)'],
+                ['Last Active', peer.lastActiveAt ? formatTimeSince(peer.lastActiveAt) : 'never'],
                 ['Superset Project', peer.supersetProject || '-'],
                 ['Workspace Type', peer.supersetType || '-'],
-                ['Working Dir', peer.cwd], ['Last Seen', new Date(peer.last_seen).toLocaleTimeString()],
+                ['Working Dir', peer.cwd],
+                ['Last Seen', new Date(peer.last_seen).toLocaleTimeString()],
             ];
             for (var i = 0; i < rows.length; i++) {
                 var row = el('div', 'sd-row');
@@ -712,6 +1078,9 @@
             for (var k = 0; k < keys.length; k++) {
                 grid.appendChild(buildRoom(keys[k], projects[keys[k]]));
             }
+
+            // Re-render any active walking overlays
+            renderWalkingOverlays();
         }
 
         // ---- SYNC ----
@@ -719,16 +1088,29 @@
 
         function syncPeers(peers) {
             if (!peers) return;
+
+            // Detect state transitions and trigger walking animations
+            for (var i = 0; i < peers.length; i++) {
+                var p = peers[i];
+                var wasActive = prevActiveState[p.id];
+                var nowActive = isActive(p);
+
+                if (wasActive !== undefined && wasActive !== nowActive && !walkingAgents[p.id]) {
+                    startWalkAnimation(p.id, p, nowActive ? 'to-office' : 'to-bed');
+                }
+                prevActiveState[p.id] = nowActive;
+            }
+
             lastPeers = peers;
 
             // Update peer map
             allPeersMap = {};
             var activeCount = 0, idleCount = 0;
             var projectSet = {};
-            for (var i = 0; i < peers.length; i++) {
-                allPeersMap[peers[i].id] = peers[i];
-                if (isActive(peers[i])) activeCount++; else idleCount++;
-                projectSet[extractProject(peers[i].cwd)] = true;
+            for (var j = 0; j < peers.length; j++) {
+                allPeersMap[peers[j].id] = peers[j];
+                if (isActive(peers[j])) activeCount++; else idleCount++;
+                projectSet[extractProject(peers[j].cwd)] = true;
             }
 
             document.getElementById('heroCount').textContent = peers.length;

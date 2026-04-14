@@ -13,10 +13,107 @@ const fs = require('fs');
 const path = require('path');
 const { execFile } = require('child_process');
 
+const { readdir, readFile, stat } = require('fs/promises');
+
 const PORT = parseInt(process.argv[2] || '8080', 10);
 const BROKER_HOST = '127.0.0.1';
 const BROKER_PORT = 7899;
 const ROOT = __dirname;
+const PROJECTS_DIR = path.join(process.env.HOME, '.claude', 'projects');
+
+/**
+ * Look up session info for a given CWD: topic and last user instruction timestamp.
+ * Reads the most recently modified JSONL in the project directory.
+ */
+async function getSessionInfo(cwd) {
+  const projectKey = cwd.replace(/\//g, '-');
+  const projectDir = path.join(PROJECTS_DIR, projectKey);
+
+  try {
+    const files = await readdir(projectDir);
+    const jsonls = files.filter(f => f.endsWith('.jsonl'));
+    if (jsonls.length === 0) return null;
+
+    // Find the most recently modified JSONL
+    let newest = null;
+    let newestMtime = 0;
+    for (const f of jsonls) {
+      const s = await stat(path.join(projectDir, f));
+      if (s.mtimeMs > newestMtime) {
+        newestMtime = s.mtimeMs;
+        newest = f;
+      }
+    }
+    if (!newest) return null;
+
+    const sessionId = newest.replace('.jsonl', '');
+
+    // Try sessions-index.json for the summary
+    let topic = null;
+    const indexPath = path.join(projectDir, 'sessions-index.json');
+    try {
+      const indexData = JSON.parse(await readFile(indexPath, 'utf8'));
+      const entry = (indexData.entries || []).find(e => e.sessionId === sessionId);
+      if (entry && entry.summary) topic = entry.summary;
+    } catch { /* no index, fall through */ }
+
+    // Read JSONL for first prompt (if no topic) and last user timestamp
+    const content = await readFile(path.join(projectDir, newest), 'utf8');
+    let lastUserTimestamp = null;
+    let firstPrompt = null;
+
+    for (const line of content.split('\n')) {
+      if (!line.trim()) continue;
+      try {
+        const entry = JSON.parse(line);
+        if (entry.type !== 'user') continue;
+
+        // Track last user message timestamp
+        if (entry.timestamp) {
+          lastUserTimestamp = entry.timestamp;
+        }
+
+        // Capture first user prompt as fallback topic
+        if (!firstPrompt) {
+          const msg = entry.message;
+          if (msg) {
+            if (typeof msg.content === 'string') firstPrompt = msg.content.slice(0, 120);
+            else if (Array.isArray(msg.content)) {
+              for (const block of msg.content) {
+                if (block.type === 'text' && block.text) {
+                  firstPrompt = block.text.slice(0, 120);
+                  break;
+                }
+              }
+            }
+          }
+        }
+      } catch { /* skip malformed lines */ }
+    }
+
+    return {
+      sessionTopic: topic || firstPrompt || null,
+      lastInstructionAt: lastUserTimestamp || null,
+    };
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Enrich peers array with session info from local session files.
+ */
+async function enrichWithSessionInfo(peers) {
+  const promises = peers.map(async (p) => {
+    const info = await getSessionInfo(p.cwd);
+    return {
+      ...p,
+      sessionTopic: info?.sessionTopic || null,
+      lastInstructionAt: info?.lastInstructionAt || null,
+    };
+  });
+  return Promise.all(promises);
+}
 
 const MIME_TYPES = {
   '.html': 'text/html',
@@ -120,9 +217,11 @@ const server = http.createServer((req, res) => {
             }
             const parentPids = [...new Set(Object.values(ppidMap).filter(p => p !== '1' && p !== '0'))];
             if (parentPids.length === 0) {
-              const enriched = peers.map(p => ({ ...p, cpu: 0, isActive: false }));
-              res.writeHead(200, { 'Content-Type': 'application/json' });
-              res.end(JSON.stringify(enriched));
+              const cpuEnriched = peers.map(p => ({ ...p, cpu: 0, isActive: false }));
+              enrichWithSessionInfo(cpuEnriched).then(enriched => {
+                res.writeHead(200, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify(enriched));
+              });
               return;
             }
             // Sample 1: get cumulative CPU time (in seconds)
@@ -158,13 +257,15 @@ const server = http.createServer((req, res) => {
                       cpuMap[pid] = ((t2[pid] - t1[pid]) / elapsed) * 100;
                     }
                   }
-                  const enriched = peers.map(p => {
+                  const cpuEnriched = peers.map(p => {
                     const ppid = ppidMap[String(p.pid)];
                     const cpu = ppid ? (cpuMap[ppid] || 0) : 0;
                     return { ...p, cpu: Math.round(cpu * 10) / 10, parentPid: ppid ? parseInt(ppid) : null, isActive: cpu > 5 };
                   });
-                  res.writeHead(200, { 'Content-Type': 'application/json' });
-                  res.end(JSON.stringify(enriched));
+                  enrichWithSessionInfo(cpuEnriched).then(enriched => {
+                    res.writeHead(200, { 'Content-Type': 'application/json' });
+                    res.end(JSON.stringify(enriched));
+                  });
                 });
               }, 200);
             });

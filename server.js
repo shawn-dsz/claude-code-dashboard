@@ -24,6 +24,91 @@ const PROJECTS_DIR = path.join(process.env.HOME, '.claude', 'projects');
 const SUPERSET_DIR = path.join(process.env.HOME, '.superset');
 const SUPERSET_DB = path.join(SUPERSET_DIR, 'local.db');
 const SUPERSET_STATE = path.join(SUPERSET_DIR, 'app-state.json');
+const REGISTRY_PATH = path.join(ROOT, 'agent-registry.json');
+
+// Agent name pool - curated names for auto-assignment
+const AGENT_NAMES = [
+  'Pixel', 'Byte', 'Chip', 'Nova', 'Spark', 'Onyx', 'Zinc', 'Sage',
+  'Flux', 'Drift', 'Ember', 'Quill', 'Rune', 'Volt', 'Haze', 'Echo',
+  'Neon', 'Fern', 'Moss', 'Clay', 'Dusk', 'Wren', 'Lark', 'Reed',
+  'Ash', 'Vale', 'Cove', 'Peak', 'Mist', 'Glen', 'Storm', 'Frost',
+];
+
+// Persistent colour palette for agents (index stored in registry)
+const AGENT_COLOURS = [
+  ['#ff5555','#cc3333'], ['#00d68f','#009966'], ['#7b61ff','#5533cc'],
+  ['#4da6ff','#3377cc'], ['#ffaa33','#cc8800'], ['#ff79c6','#cc5599'],
+  ['#50fa7b','#33cc55'], ['#f1fa8c','#cccc44'], ['#8be9fd','#55bbcc'],
+  ['#bd93f9','#9966dd'],
+];
+
+/**
+ * Load agent registry from disk. Returns { agents: { [id]: { name, colourIndex, lastActiveAt } } }
+ */
+function loadRegistry() {
+  try {
+    return JSON.parse(fs.readFileSync(REGISTRY_PATH, 'utf8'));
+  } catch {
+    return {};
+  }
+}
+
+function saveRegistry(registry) {
+  fs.writeFileSync(REGISTRY_PATH, JSON.stringify(registry, null, 2));
+}
+
+/**
+ * Enrich peers with persistent names, colours, and lastActiveAt from the registry.
+ * Auto-assigns name and colour to new agents. Updates lastActiveAt for active agents.
+ */
+function enrichWithRegistry(peers) {
+  const registry = loadRegistry();
+  let dirty = false;
+
+  // Collect names already in use
+  const usedNames = new Set(Object.values(registry).map(r => r.name));
+  const usedColours = new Set(Object.values(registry).map(r => r.colourIndex));
+
+  const enriched = peers.map(p => {
+    let entry = registry[p.id];
+    if (!entry) {
+      // Auto-assign name
+      let name = null;
+      for (const n of AGENT_NAMES) {
+        if (!usedNames.has(n)) { name = n; break; }
+      }
+      if (!name) name = 'Agent-' + p.id.slice(0, 6);
+      usedNames.add(name);
+
+      // Auto-assign colour (round-robin, prefer unused)
+      let colourIndex = 0;
+      for (let i = 0; i < AGENT_COLOURS.length; i++) {
+        if (!usedColours.has(i)) { colourIndex = i; break; }
+      }
+      usedColours.add(colourIndex);
+
+      entry = { name, colourIndex, lastActiveAt: null };
+      registry[p.id] = entry;
+      dirty = true;
+    }
+
+    // Update lastActiveAt when agent is active
+    if (p.isActive) {
+      entry.lastActiveAt = new Date().toISOString();
+      dirty = true;
+    }
+
+    return {
+      ...p,
+      agentName: entry.name,
+      agentColours: AGENT_COLOURS[entry.colourIndex % AGENT_COLOURS.length],
+      lastActiveAt: entry.lastActiveAt,
+    };
+  });
+
+  if (dirty) saveRegistry(registry);
+  return enriched;
+}
 
 /**
  * Read Superset workspace data and build a CWD-to-workspace map.
@@ -304,7 +389,7 @@ const server = http.createServer((req, res) => {
             const parentPids = [...new Set(Object.values(ppidMap).filter(p => p !== '1' && p !== '0'))];
             if (parentPids.length === 0) {
               const cpuEnriched = peers.map(p => ({ ...p, cpu: 0, isActive: false }));
-              enrichWithSessionInfo(cpuEnriched).then(e => enrichWithSupersetData(e)).then(enriched => {
+              enrichWithSessionInfo(cpuEnriched).then(e => enrichWithSupersetData(e)).then(e => enrichWithRegistry(e)).then(enriched => {
                 res.writeHead(200, { 'Content-Type': 'application/json' });
                 res.end(JSON.stringify(enriched));
               });
@@ -348,7 +433,7 @@ const server = http.createServer((req, res) => {
                     const cpu = ppid ? (cpuMap[ppid] || 0) : 0;
                     return { ...p, cpu: Math.round(cpu * 10) / 10, parentPid: ppid ? parseInt(ppid) : null, isActive: cpu > 5 };
                   });
-                  enrichWithSessionInfo(cpuEnriched).then(e => enrichWithSupersetData(e)).then(enriched => {
+                  enrichWithSessionInfo(cpuEnriched).then(e => enrichWithSupersetData(e)).then(e => enrichWithRegistry(e)).then(enriched => {
                     res.writeHead(200, { 'Content-Type': 'application/json' });
                     res.end(JSON.stringify(enriched));
                   });
@@ -368,6 +453,38 @@ const server = http.createServer((req, res) => {
     });
     proxyReq.write(JSON.stringify({ scope: 'machine' }));
     proxyReq.end();
+    return;
+  }
+
+  // Rename an agent: PUT /api/agents/<id>/name  body: { name: "NewName" }
+  const renameMatch = req.url.match(/^\/api\/agents\/([^/]+)\/name$/);
+  if (renameMatch && req.method === 'PUT') {
+    let body = '';
+    req.on('data', chunk => { body += chunk; });
+    req.on('end', () => {
+      try {
+        const { name } = JSON.parse(body);
+        if (!name || typeof name !== 'string') {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: 'name required' }));
+          return;
+        }
+        const agentId = decodeURIComponent(renameMatch[1]);
+        const registry = loadRegistry();
+        if (!registry[agentId]) {
+          res.writeHead(404, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: 'agent not found' }));
+          return;
+        }
+        registry[agentId].name = name.trim().slice(0, 20);
+        saveRegistry(registry);
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ ok: true, name: registry[agentId].name }));
+      } catch {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'invalid JSON' }));
+      }
+    });
     return;
   }
 

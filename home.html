@@ -717,6 +717,9 @@
         function getAgentName(peer) {
             return peer.agentName || peer.id.slice(0, 8);
         }
+        function getSpriteIndex(peer) {
+            return Math.abs(hashStr(peer.id)) % 10;
+        }
         function el(tag, cls, txt) {
             var n = document.createElement(tag);
             if (cls) n.className = cls;
@@ -724,50 +727,116 @@
             return n;
         }
 
+        // ---- SPRITE PERSONALITY SYSTEM ----
+        var SKIN_TONES = ['#ffd5b0','#f5c8a0','#e8b896','#d4a574','#c49060','#a07050','#8b6040','#fde0c8','#f0d0a0','#e0c090'];
+        var HAIR_COLORS = ['#3a2a1a','#8b6040','#d4a050','#c03020','#222','#6a4a3a','#f5d060','#553322','#884422','#2a1a0a'];
+        var SHOE_COLORS = ['#333','#553322','#444','#222','#664433','#2a2a3a','#555','#3a2a2a','#333','#442211'];
+
+        function drawHairStyle(ctx, p, idx, shirtColor) {
+            ctx.fillStyle = HAIR_COLORS[idx % 10];
+            switch (idx % 10) {
+                case 0: // Flat top
+                    ctx.fillRect(5*p,0.5*p,6*p,2*p); ctx.fillRect(4*p,1*p,1*p,1.5*p); ctx.fillRect(11*p,1*p,1*p,1.5*p); break;
+                case 1: // Spiky
+                    ctx.fillRect(5*p,1*p,6*p,1.5*p); ctx.fillRect(5*p,-0.5*p,1*p,2*p); ctx.fillRect(7*p,-1*p,1*p,2.5*p); ctx.fillRect(9*p,-0.5*p,1*p,2*p); ctx.fillRect(11*p,0,1*p,1.5*p); break;
+                case 2: // Long hair
+                    ctx.fillRect(4*p,0,8*p,2.5*p); ctx.fillRect(3*p,1*p,1*p,5*p); ctx.fillRect(12*p,1*p,1*p,5*p); break;
+                case 3: // Mohawk
+                    ctx.fillRect(6.5*p,-1*p,3*p,1.5*p); ctx.fillRect(5.5*p,0.5*p,5*p,2*p); break;
+                case 4: // Top bun
+                    ctx.fillRect(5*p,0.5*p,6*p,2*p); ctx.fillRect(6.5*p,-1*p,3*p,2*p); break;
+                case 5: // Curly (wide)
+                    ctx.fillRect(4*p,0,8*p,2.5*p); ctx.fillRect(3*p,1*p,1.5*p,3*p); ctx.fillRect(11.5*p,1*p,1.5*p,3*p); break;
+                case 6: // Side swept
+                    ctx.fillRect(5*p,0.5*p,6*p,2*p); ctx.fillRect(3*p,1*p,2*p,2*p); ctx.fillRect(3*p,3*p,1*p,1*p); break;
+                case 7: // Buzz cut
+                    ctx.fillRect(5*p,1*p,6*p,1.5*p); break;
+                case 8: // Ponytail
+                    ctx.fillRect(5*p,0.5*p,6*p,2*p); ctx.fillRect(11*p,2*p,2*p,1*p); ctx.fillRect(12*p,3*p,1.5*p,2*p); ctx.fillRect(12*p,5*p,1*p,1*p); break;
+                case 9: // Beanie
+                    ctx.fillStyle = shirtColor; ctx.fillRect(4*p,0,8*p,2.5*p);
+                    ctx.fillStyle = darkenColor(shirtColor, 0.3); ctx.fillRect(4*p,1.5*p,8*p,0.5*p); break;
+            }
+        }
+
+        function drawAccessory(ctx, p, idx) {
+            switch (idx % 10) {
+                case 1: // Glasses
+                    ctx.fillStyle = '#333';
+                    ctx.fillRect(5.5*p,3.5*p,2*p,0.4*p); ctx.fillRect(8.5*p,3.5*p,2*p,0.4*p); ctx.fillRect(7.5*p,3.5*p,1*p,0.4*p);
+                    ctx.fillRect(5.5*p,3.2*p,0.4*p,1.5*p); ctx.fillRect(7.1*p,3.2*p,0.4*p,1.5*p);
+                    ctx.fillRect(8.5*p,3.2*p,0.4*p,1.5*p); ctx.fillRect(10.1*p,3.2*p,0.4*p,1.5*p);
+                    break;
+                case 4: // Earring
+                    ctx.fillStyle = '#ffd700'; ctx.fillRect(4*p,4.5*p,0.5*p,0.5*p); break;
+                case 5: // Round glasses
+                    ctx.fillStyle = '#996633';
+                    ctx.fillRect(5.5*p,3.3*p,2.2*p,0.3*p); ctx.fillRect(8.3*p,3.3*p,2.2*p,0.3*p); ctx.fillRect(7.7*p,3.6*p,0.6*p,0.3*p);
+                    break;
+                case 7: // Headphones
+                    ctx.fillStyle = '#444'; ctx.fillRect(3.5*p,2*p,1*p,3*p); ctx.fillRect(11.5*p,2*p,1*p,3*p);
+                    ctx.fillStyle = '#666'; ctx.fillRect(4*p,0,8*p,0.8*p);
+                    break;
+            }
+        }
+
+        function drawSpriteEyes(ctx, p, idx, isSleeping) {
+            if (isSleeping) {
+                ctx.fillStyle = '#555';
+                ctx.fillRect(6*p,4*p,2*p,0.5*p); ctx.fillRect(9*p,4*p,2*p,0.5*p);
+                return;
+            }
+            switch (idx % 5) {
+                case 0: // Round
+                    ctx.fillStyle = '#222'; ctx.fillRect(6*p,3.5*p,1.5*p,1.5*p); ctx.fillRect(9*p,3.5*p,1.5*p,1.5*p);
+                    ctx.fillStyle = '#fff'; ctx.fillRect(6.5*p,3.5*p,0.5*p,0.5*p); ctx.fillRect(9.5*p,3.5*p,0.5*p,0.5*p); break;
+                case 1: // Small
+                    ctx.fillStyle = '#222'; ctx.fillRect(6.5*p,3.8*p,1*p,1*p); ctx.fillRect(9.5*p,3.8*p,1*p,1*p);
+                    ctx.fillStyle = '#fff'; ctx.fillRect(7*p,3.8*p,0.4*p,0.4*p); ctx.fillRect(10*p,3.8*p,0.4*p,0.4*p); break;
+                case 2: // Wide
+                    ctx.fillStyle = '#222'; ctx.fillRect(5.5*p,3.5*p,2*p,1.5*p); ctx.fillRect(9*p,3.5*p,2*p,1.5*p);
+                    ctx.fillStyle = '#fff'; ctx.fillRect(6.5*p,3.5*p,0.7*p,0.7*p); ctx.fillRect(10*p,3.5*p,0.7*p,0.7*p); break;
+                case 3: // Narrow
+                    ctx.fillStyle = '#222'; ctx.fillRect(6*p,3.8*p,1.5*p,1*p); ctx.fillRect(9*p,3.8*p,1.5*p,1*p);
+                    ctx.fillStyle = '#fff'; ctx.fillRect(6.8*p,3.8*p,0.5*p,0.5*p); ctx.fillRect(9.8*p,3.8*p,0.5*p,0.5*p); break;
+                case 4: // With eyebrows
+                    ctx.fillStyle = '#222'; ctx.fillRect(6*p,3.5*p,1.5*p,1.2*p); ctx.fillRect(9*p,3.5*p,1.5*p,1.2*p);
+                    ctx.fillStyle = '#fff'; ctx.fillRect(6.5*p,3.3*p,0.5*p,0.5*p); ctx.fillRect(9.5*p,3.3*p,0.5*p,0.5*p);
+                    ctx.fillStyle = HAIR_COLORS[idx % 10]; ctx.fillRect(5.5*p,3*p,2*p,0.4*p); ctx.fillRect(9*p,3*p,2*p,0.4*p); break;
+            }
+        }
+
         // ---- PIXEL ART SPRITE DRAWING ----
-        // Draw a more detailed pixel character (front-facing, 32x32 canvas)
-        function drawCharacter(canvas, color, state) {
+        function drawCharacter(canvas, color, state, spriteIdx) {
+            var idx = spriteIdx || 0;
             var ctx = canvas.getContext('2d');
-            var p = 2; // pixel size
+            var p = 2;
             ctx.clearRect(0, 0, 32, 32);
             ctx.imageSmoothingEnabled = false;
 
             var isTyping = (state === 'type');
             var isSleeping = (state === 'sleep');
             var isWalking = (state === 'walk');
+            var skin = SKIN_TONES[idx % 10];
 
-            // Hair
-            ctx.fillStyle = darkenColor(color, 0.4);
-            ctx.fillRect(5*p, 0*p, 6*p, 2*p);
-            ctx.fillRect(4*p, 1*p, 1*p, 1*p);
-            ctx.fillRect(11*p, 1*p, 1*p, 1*p);
+            // Hair (unique per sprite)
+            drawHairStyle(ctx, p, idx, color);
 
-            // Head (skin)
-            ctx.fillStyle = '#ffd5b0';
+            // Head
+            ctx.fillStyle = skin;
             ctx.fillRect(5*p, 2*p, 6*p, 5*p);
-            // Ears
             ctx.fillRect(4*p, 3*p, 1*p, 2*p);
             ctx.fillRect(11*p, 3*p, 1*p, 2*p);
 
-            // Eyes
-            if (isSleeping) {
-                // Closed eyes (horizontal lines)
-                ctx.fillStyle = '#555';
-                ctx.fillRect(6*p, 4*p, 2*p, 1*p);
-                ctx.fillRect(9*p, 4*p, 2*p, 1*p);
-            } else {
-                ctx.fillStyle = '#222';
-                ctx.fillRect(6*p, 3.5*p, 1.5*p, 1.5*p);
-                ctx.fillRect(9*p, 3.5*p, 1.5*p, 1.5*p);
-                // Eye highlights
-                ctx.fillStyle = '#fff';
-                ctx.fillRect(6.5*p, 3.5*p, 0.5*p, 0.5*p);
-                ctx.fillRect(9.5*p, 3.5*p, 0.5*p, 0.5*p);
-            }
+            // Eyes (unique per sprite)
+            drawSpriteEyes(ctx, p, idx, isSleeping);
+
+            // Accessory (unique per sprite)
+            drawAccessory(ctx, p, idx);
 
             // Mouth
             if (!isSleeping) {
-                ctx.fillStyle = '#c4937a';
+                ctx.fillStyle = darkenColor(skin, 0.2);
                 ctx.fillRect(7.5*p, 5.5*p, 1*p, 0.5*p);
             }
 
@@ -777,53 +846,44 @@
 
             // Arms
             if (isTyping) {
-                // Arms forward (typing)
                 ctx.fillStyle = color;
                 ctx.fillRect(2*p, 7*p, 2*p, 3*p);
                 ctx.fillRect(12*p, 7*p, 2*p, 3*p);
-                // Hands (skin) reaching forward
-                ctx.fillStyle = '#ffd5b0';
+                ctx.fillStyle = skin;
                 ctx.fillRect(2*p, 10*p, 2*p, 1*p);
                 ctx.fillRect(12*p, 10*p, 2*p, 1*p);
             } else if (isWalking) {
-                // One arm forward, one back
                 ctx.fillStyle = color;
                 ctx.fillRect(2*p, 7*p, 2*p, 4*p);
                 ctx.fillRect(12*p, 8*p, 2*p, 3*p);
-                ctx.fillStyle = '#ffd5b0';
+                ctx.fillStyle = skin;
                 ctx.fillRect(2*p, 11*p, 2*p, 1*p);
                 ctx.fillRect(12*p, 11*p, 2*p, 1*p);
             } else {
-                // Arms at sides
                 ctx.fillStyle = color;
                 ctx.fillRect(2*p, 7*p, 2*p, 4*p);
                 ctx.fillRect(12*p, 7*p, 2*p, 4*p);
-                // Hands
-                ctx.fillStyle = '#ffd5b0';
+                ctx.fillStyle = skin;
                 ctx.fillRect(2*p, 11*p, 2*p, 1*p);
                 ctx.fillRect(12*p, 11*p, 2*p, 1*p);
             }
 
-            // Legs (dark)
+            // Legs
             ctx.fillStyle = darkenColor(color, 0.5);
             if (isWalking) {
-                // Walking legs - spread apart
                 ctx.fillRect(5*p, 12*p, 2*p, 3*p);
                 ctx.fillRect(9*p, 12*p, 2*p, 3*p);
-                // Shoes
-                ctx.fillStyle = '#333';
+                ctx.fillStyle = SHOE_COLORS[idx % 10];
                 ctx.fillRect(4*p, 15*p, 3*p, 1*p);
                 ctx.fillRect(9*p, 15*p, 3*p, 1*p);
             } else {
                 ctx.fillRect(5*p, 12*p, 3*p, 3*p);
                 ctx.fillRect(8*p, 12*p, 3*p, 3*p);
-                // Shoes
-                ctx.fillStyle = '#333';
+                ctx.fillStyle = SHOE_COLORS[idx % 10];
                 ctx.fillRect(4*p, 15*p, 4*p, 1*p);
                 ctx.fillRect(8*p, 15*p, 4*p, 1*p);
             }
 
-            // Sleeping overlay
             if (isSleeping) {
                 ctx.globalAlpha = 0.3;
                 ctx.fillStyle = '#000';
@@ -833,43 +893,33 @@
         }
 
         // Walk frame alternation (for animation)
-        function drawCharacterWalkFrame(canvas, color, frame) {
+        function drawCharacterWalkFrame(canvas, color, frame, spriteIdx) {
+            var idx = spriteIdx || 0;
             var ctx = canvas.getContext('2d');
             var p = 2;
             ctx.clearRect(0, 0, 32, 32);
             ctx.imageSmoothingEnabled = false;
+            var skin = SKIN_TONES[idx % 10];
 
-            // Hair
-            ctx.fillStyle = darkenColor(color, 0.4);
-            ctx.fillRect(5*p, 0*p, 6*p, 2*p);
-            ctx.fillRect(4*p, 1*p, 1*p, 1*p);
-            ctx.fillRect(11*p, 1*p, 1*p, 1*p);
+            drawHairStyle(ctx, p, idx, color);
 
-            // Head
-            ctx.fillStyle = '#ffd5b0';
+            ctx.fillStyle = skin;
             ctx.fillRect(5*p, 2*p, 6*p, 5*p);
             ctx.fillRect(4*p, 3*p, 1*p, 2*p);
             ctx.fillRect(11*p, 3*p, 1*p, 2*p);
 
-            // Eyes
-            ctx.fillStyle = '#222';
-            ctx.fillRect(6*p, 3.5*p, 1.5*p, 1.5*p);
-            ctx.fillRect(9*p, 3.5*p, 1.5*p, 1.5*p);
-            ctx.fillStyle = '#fff';
-            ctx.fillRect(6.5*p, 3.5*p, 0.5*p, 0.5*p);
-            ctx.fillRect(9.5*p, 3.5*p, 0.5*p, 0.5*p);
+            drawSpriteEyes(ctx, p, idx, false);
+            drawAccessory(ctx, p, idx);
 
-            // Mouth
-            ctx.fillStyle = '#c4937a';
+            ctx.fillStyle = darkenColor(skin, 0.2);
             ctx.fillRect(7.5*p, 5.5*p, 1*p, 0.5*p);
 
-            // Body
+            // Body with bob
             ctx.fillStyle = color;
-            // Slight bob
             var bobY = (frame % 2 === 0) ? 0 : -0.5*p;
             ctx.fillRect(4*p, 7*p + bobY, 8*p, 5*p);
 
-            // Arms - swing based on frame
+            // Arms swing
             ctx.fillStyle = color;
             if (frame % 4 < 2) {
                 ctx.fillRect(2*p, 7*p + bobY, 2*p, 4*p);
@@ -878,17 +928,11 @@
                 ctx.fillRect(2*p, 8*p + bobY, 2*p, 3*p);
                 ctx.fillRect(12*p, 7*p + bobY, 2*p, 4*p);
             }
-            // Hands
-            ctx.fillStyle = '#ffd5b0';
-            if (frame % 4 < 2) {
-                ctx.fillRect(2*p, 11*p + bobY, 2*p, 1*p);
-                ctx.fillRect(12*p, 11*p + bobY, 2*p, 1*p);
-            } else {
-                ctx.fillRect(2*p, 11*p + bobY, 2*p, 1*p);
-                ctx.fillRect(12*p, 11*p + bobY, 2*p, 1*p);
-            }
+            ctx.fillStyle = skin;
+            ctx.fillRect(2*p, 11*p + bobY, 2*p, 1*p);
+            ctx.fillRect(12*p, 11*p + bobY, 2*p, 1*p);
 
-            // Legs - alternate
+            // Legs alternate
             ctx.fillStyle = darkenColor(color, 0.5);
             if (frame % 4 < 2) {
                 ctx.fillRect(5*p, 12*p + bobY, 2*p, 3*p);
@@ -897,8 +941,7 @@
                 ctx.fillRect(5*p, 12.5*p + bobY, 2*p, 2.5*p);
                 ctx.fillRect(9*p, 12*p + bobY, 2*p, 3*p);
             }
-            // Shoes
-            ctx.fillStyle = '#333';
+            ctx.fillStyle = SHOE_COLORS[idx % 10];
             if (frame % 4 < 2) {
                 ctx.fillRect(4*p, 15*p + bobY, 3*p, 1*p);
                 ctx.fillRect(9*p, 14.5*p + bobY, 3*p, 1*p);
@@ -991,7 +1034,7 @@
             var canvas = document.createElement('canvas');
             canvas.width = 32; canvas.height = 32;
             canvas.className = 'agent-sprite';
-            drawCharacter(canvas, colors[0], 'type');
+            drawCharacter(canvas, colors[0], 'type', getSpriteIndex(peer));
             scene.appendChild(canvas);
 
             var monitor = el('div', 'desk-monitor');
@@ -1039,7 +1082,7 @@
             var canvas = document.createElement('canvas');
             canvas.width = 32; canvas.height = 32;
             canvas.className = 'agent-sprite';
-            drawCharacter(canvas, colors[0], 'sleep');
+            drawCharacter(canvas, colors[0], 'sleep', getSpriteIndex(peer));
             scene.appendChild(canvas);
 
             var bed = el('div', 'bed-frame');
@@ -1137,7 +1180,7 @@
                         // Update sprite frame
                         var canvas = overlay.querySelector('canvas');
                         if (canvas) {
-                            drawCharacterWalkFrame(canvas, getColors(walk.peer)[0], walk.frameIndex);
+                            drawCharacterWalkFrame(canvas, getColors(walk.peer)[0], walk.frameIndex, getSpriteIndex(walk.peer));
                         }
                     }
                 }
@@ -1172,7 +1215,7 @@
                 canvas.width = 32; canvas.height = 32;
                 canvas.style.width = '32px';
                 canvas.style.height = '32px';
-                drawCharacterWalkFrame(canvas, getColors(peer)[0], walk.frameIndex);
+                drawCharacterWalkFrame(canvas, getColors(peer)[0], walk.frameIndex, getSpriteIndex(peer));
                 overlay.appendChild(canvas);
 
                 // Name tag under sprite
@@ -1249,7 +1292,7 @@
             bigCanvas.width = 32; bigCanvas.height = 32;
             bigCanvas.style.width = '48px';
             bigCanvas.style.height = '48px';
-            drawCharacter(bigCanvas, colors[0], active ? 'type' : 'sleep');
+            drawCharacter(bigCanvas, colors[0], active ? 'type' : 'sleep', getSpriteIndex(peer));
             header.appendChild(bigCanvas);
 
             var headerInfo = el('div', '');

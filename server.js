@@ -65,21 +65,11 @@ function enrichWithRegistry(peers) {
   const registry = loadRegistry();
   let dirty = false;
 
-  // Collect names already in use
-  const usedNames = new Set(Object.values(registry).map(r => r.name));
   const usedColours = new Set(Object.values(registry).map(r => r.colourIndex));
 
   const enriched = peers.map(p => {
     let entry = registry[p.id];
     if (!entry) {
-      // Auto-assign name
-      let name = null;
-      for (const n of AGENT_NAMES) {
-        if (!usedNames.has(n)) { name = n; break; }
-      }
-      if (!name) name = 'Agent-' + p.id.slice(0, 6);
-      usedNames.add(name);
-
       // Auto-assign colour (round-robin, prefer unused)
       let colourIndex = 0;
       for (let i = 0; i < AGENT_COLOURS.length; i++) {
@@ -87,7 +77,7 @@ function enrichWithRegistry(peers) {
       }
       usedColours.add(colourIndex);
 
-      entry = { name, colourIndex, lastActiveAt: null };
+      entry = { colourIndex, lastActiveAt: null };
       registry[p.id] = entry;
       dirty = true;
     }
@@ -98,9 +88,12 @@ function enrichWithRegistry(peers) {
       dirty = true;
     }
 
+    // Agent name priority: session agent name (from hook) > registry override > fallback
+    const agentName = p.sessionAgentName || entry.name || p.id.slice(0, 8);
+
     return {
       ...p,
-      agentName: entry.name,
+      agentName,
       agentColours: AGENT_COLOURS[entry.colourIndex % AGENT_COLOURS.length],
       lastActiveAt: entry.lastActiveAt,
     };
@@ -184,6 +177,7 @@ async function enrichWithSupersetData(peers) {
         supersetTabName: ws.tabName,
         supersetProject: ws.projectName,
         supersetWorkspace: ws.workspaceName,
+        supersetWorkspaceId: ws.workspaceId,
         supersetBranch: ws.branch,
         supersetType: ws.type,
       };
@@ -193,31 +187,46 @@ async function enrichWithSupersetData(peers) {
 }
 
 /**
- * Look up session info for a given CWD: topic and last user instruction timestamp.
- * Reads the most recently modified JSONL in the project directory.
+ * Look up session info for a given CWD and optional sessionId.
+ * When sessionId is provided, reads that specific JSONL.
+ * Otherwise falls back to the most recently modified JSONL in the project directory.
  */
-async function getSessionInfo(cwd) {
+async function getSessionInfo(cwd, sessionId) {
   const projectKey = cwd.replace(/\//g, '-');
   const projectDir = path.join(PROJECTS_DIR, projectKey);
 
   try {
-    const files = await readdir(projectDir);
-    const jsonls = files.filter(f => f.endsWith('.jsonl'));
-    if (jsonls.length === 0) return null;
+    let targetFile = null;
 
-    // Find the most recently modified JSONL
-    let newest = null;
-    let newestMtime = 0;
-    for (const f of jsonls) {
-      const s = await stat(path.join(projectDir, f));
-      if (s.mtimeMs > newestMtime) {
-        newestMtime = s.mtimeMs;
-        newest = f;
-      }
+    // If sessionId provided, try to read that specific JSONL
+    if (sessionId) {
+      const specificFile = sessionId + '.jsonl';
+      try {
+        await stat(path.join(projectDir, specificFile));
+        targetFile = specificFile;
+      } catch { /* file doesn't exist, fall through */ }
     }
-    if (!newest) return null;
 
-    const sessionId = newest.replace('.jsonl', '');
+    // Fall back to most recently modified JSONL
+    if (!targetFile) {
+      const files = await readdir(projectDir);
+      const jsonls = files.filter(f => f.endsWith('.jsonl'));
+      if (jsonls.length === 0) return null;
+
+      let newest = null;
+      let newestMtime = 0;
+      for (const f of jsonls) {
+        const s = await stat(path.join(projectDir, f));
+        if (s.mtimeMs > newestMtime) {
+          newestMtime = s.mtimeMs;
+          newest = f;
+        }
+      }
+      if (!newest) return null;
+      targetFile = newest;
+    }
+
+    sessionId = targetFile.replace('.jsonl', '');
 
     // Try sessions-index.json for the summary
     let topic = null;
@@ -228,15 +237,60 @@ async function getSessionInfo(cwd) {
       if (entry && entry.summary) topic = entry.summary;
     } catch { /* no index, fall through */ }
 
-    // Read JSONL for first prompt (if no topic) and last user timestamp
-    const content = await readFile(path.join(projectDir, newest), 'utf8');
+    // Read JSONL for first prompt (if no topic), last user timestamp, user messages, and recap
+    const content = await readFile(path.join(projectDir, targetFile), 'utf8');
     let lastUserTimestamp = null;
     let firstPrompt = null;
+    const userMessages = [];
+    let lastAssistantText = null;
+    let sessionColor = null;
+    let sessionAgentName = null;
 
     for (const line of content.split('\n')) {
       if (!line.trim()) continue;
       try {
         const entry = JSON.parse(line);
+
+        // Extract session colour and agent name from hooks
+        if (entry.attachment?.stdout || entry.attachment?.content) {
+          const hookText = (entry.attachment.stdout || '') + ' ' +
+            (typeof entry.attachment.content === 'string' ? entry.attachment.content : JSON.stringify(entry.attachment.content || ''));
+          // Match "Session color: X" or "Session color set to: X"
+          const colorMatch = hookText.match(/Session color(?:\s+set to)?:\s*(\w+)/i);
+          if (colorMatch) sessionColor = colorMatch[1].toLowerCase();
+          // Also match "color": "X" from JSON identity output
+          if (!sessionColor) {
+            const jsonColorMatch = hookText.match(/"color":\s*"(\w+)"/);
+            if (jsonColorMatch) sessionColor = jsonColorMatch[1].toLowerCase();
+          }
+          // Extract agent name from SessionStart hook
+          // Format 1: "Agent name: Talc"
+          // Format 2: "Your agent name for this session is 'Wildwood'"
+          if (!sessionAgentName) {
+            const m1 = hookText.match(/Agent name:\s*(\w+)/);
+            if (m1) sessionAgentName = m1[1];
+            if (!sessionAgentName) {
+              const m2 = hookText.match(/agent name[^']*'(\w+)'/i);
+              if (m2) sessionAgentName = m2[1];
+            }
+          }
+        }
+
+        // Track assistant messages for recap (last one wins)
+        if (entry.type === 'assistant') {
+          const msg = entry.message;
+          if (msg) {
+            let text = null;
+            if (typeof msg.content === 'string') text = msg.content;
+            else if (Array.isArray(msg.content)) {
+              for (const block of msg.content) {
+                if (block.type === 'text' && block.text) { text = block.text; break; }
+              }
+            }
+            if (text) lastAssistantText = text;
+          }
+        }
+
         if (entry.type !== 'user') continue;
 
         // Track last user message timestamp
@@ -244,27 +298,43 @@ async function getSessionInfo(cwd) {
           lastUserTimestamp = entry.timestamp;
         }
 
-        // Capture first user prompt as fallback topic
-        if (!firstPrompt) {
-          const msg = entry.message;
-          if (msg) {
-            if (typeof msg.content === 'string') firstPrompt = msg.content.slice(0, 120);
-            else if (Array.isArray(msg.content)) {
-              for (const block of msg.content) {
-                if (block.type === 'text' && block.text) {
-                  firstPrompt = block.text.slice(0, 120);
-                  break;
-                }
-              }
+        // Extract user message text
+        const msg = entry.message;
+        let text = null;
+        if (msg) {
+          if (typeof msg.content === 'string') text = msg.content;
+          else if (Array.isArray(msg.content)) {
+            for (const block of msg.content) {
+              if (block.type === 'text' && block.text) { text = block.text; break; }
             }
           }
+        }
+
+        if (text) {
+          // Skip messages that are just hook/system content
+          const trimmed = text.trim();
+          if (trimmed.length > 0 && !trimmed.startsWith('<system-reminder>') && !trimmed.startsWith('<local-command')) {
+            userMessages.push({
+              text: trimmed.slice(0, 200),
+              timestamp: entry.timestamp || null,
+            });
+          }
+          if (!firstPrompt) firstPrompt = trimmed.slice(0, 120);
         }
       } catch { /* skip malformed lines */ }
     }
 
+    // Build recap from last assistant message (first 300 chars)
+    const recap = lastAssistantText ? lastAssistantText.slice(0, 300) : null;
+
     return {
+      sessionId,
+      sessionColor,
+      sessionAgentName,
       sessionTopic: topic || firstPrompt || null,
       lastInstructionAt: lastUserTimestamp || null,
+      userMessages: userMessages.slice(-15),
+      recap,
     };
   } catch {
     return null;
@@ -276,11 +346,17 @@ async function getSessionInfo(cwd) {
  */
 async function enrichWithSessionInfo(peers) {
   const promises = peers.map(async (p) => {
-    const info = await getSessionInfo(p.cwd);
+    // Pass the peer's sessionId so we read the correct JSONL (not just the newest)
+    const info = await getSessionInfo(p.cwd, p.sessionId || null);
     return {
       ...p,
+      sessionId: info?.sessionId || p.sessionId || null,
+      sessionColor: info?.sessionColor || null,
+      sessionAgentName: info?.sessionAgentName || null,
       sessionTopic: info?.sessionTopic || null,
       lastInstructionAt: info?.lastInstructionAt || null,
+      userMessages: info?.userMessages || [],
+      recap: info?.recap || null,
     };
   });
   return Promise.all(promises);
@@ -392,6 +468,10 @@ const server = http.createServer((req, res) => {
               enrichWithSessionInfo(cpuEnriched).then(e => enrichWithSupersetData(e)).then(e => enrichWithRegistry(e)).then(enriched => {
                 res.writeHead(200, { 'Content-Type': 'application/json' });
                 res.end(JSON.stringify(enriched));
+              }).catch(err => {
+                console.error('Enrichment error:', err);
+                res.writeHead(200, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify(cpuEnriched));
               });
               return;
             }
@@ -483,6 +563,41 @@ const server = http.createServer((req, res) => {
       } catch {
         res.writeHead(400, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ error: 'invalid JSON' }));
+      }
+    });
+    return;
+  }
+
+  // Launch Ghostty terminal for an agent's session
+  if (req.url === '/api/launch-terminal' && req.method === 'POST') {
+    let body = '';
+    req.on('data', chunk => { body += chunk; });
+    req.on('end', () => {
+      try {
+        const { cwd, sessionId } = JSON.parse(body);
+        if (!cwd) {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: 'cwd required' }));
+          return;
+        }
+        // Build claude command - resume session if we have the ID
+        const claudeCmd = sessionId
+          ? `claude --resume ${sessionId}`
+          : 'claude --continue';
+        // Launch Ghostty: -e takes the rest as command + args
+        const { spawn } = require('child_process');
+        const script = `cd ${cwd} && ${claudeCmd}`;
+        spawn('/Applications/Ghostty.app/Contents/MacOS/ghostty', [
+          '-e', '/bin/bash', '--login', '-c', script,
+        ], {
+          detached: true,
+          stdio: 'ignore',
+        }).unref();
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ ok: true }));
+      } catch (e) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: e.message }));
       }
     });
     return;

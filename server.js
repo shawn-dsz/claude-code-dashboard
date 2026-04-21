@@ -20,6 +20,11 @@ const PORT = parseInt(process.argv[2] || '8080', 10);
 const BROKER_HOST = '127.0.0.1';
 const BROKER_PORT = 7899;
 const ROOT = __dirname;
+
+// Remote hosts to also fetch peers from (via SSH + broker)
+const REMOTE_HOSTS = [
+  { name: 'henry', ssh: 'henry', brokerPort: 7899 },
+];
 const PROJECTS_DIR = path.join(process.env.HOME, '.claude', 'projects');
 const SUPERSET_DIR = path.join(process.env.HOME, '.superset');
 const SUPERSET_DB = path.join(SUPERSET_DIR, 'local.db');
@@ -391,6 +396,115 @@ function serveStatic(req, res) {
   });
 }
 
+/**
+ * Fetch peers from a remote host via SSH, with CPU-based activity detection.
+ * Returns an array of peer objects tagged with { host: name }.
+ * Fails gracefully (returns []) if SSH or broker is unavailable.
+ */
+function fetchRemotePeers(remote) {
+  return new Promise((resolve) => {
+    // Single SSH command: query broker + get PIDs + sample CPU twice
+    const script = `
+      # Query broker
+      PEERS=$(curl -sf -X POST http://127.0.0.1:${remote.brokerPort}/list-peers -H 'Content-Type: application/json' -d '{"scope":"machine"}' 2>/dev/null)
+      if [ -z "$PEERS" ] || [ "$PEERS" = "null" ]; then echo '[]'; exit 0; fi
+
+      # Get PIDs from peers
+      PIDS=$(echo "$PEERS" | python3 -c "import json,sys; ps=json.load(sys.stdin); print(','.join(str(p['pid']) for p in ps))" 2>/dev/null)
+      if [ -z "$PIDS" ]; then echo "$PEERS"; exit 0; fi
+
+      # Get PPIDs
+      PPIDS_RAW=$(ps -p "$PIDS" -o pid=,ppid= 2>/dev/null)
+
+      # Get parent PIDs for CPU sampling
+      PARENT_PIDS=$(echo "$PPIDS_RAW" | awk '{print $2}' | sort -u | grep -v '^[01]$' | tr '\\n' ',' | sed 's/,$//')
+      if [ -z "$PARENT_PIDS" ]; then echo "$PEERS"; exit 0; fi
+
+      # CPU sample 1
+      T1=$(ps -p "$PARENT_PIDS" -o pid=,cputime= 2>/dev/null)
+      sleep 0.2
+      # CPU sample 2
+      T2=$(ps -p "$PARENT_PIDS" -o pid=,cputime= 2>/dev/null)
+
+      # Combine and output as JSON
+      python3 -c "
+import json, sys, re
+
+peers = json.loads('''$PEERS''')
+ppid_raw = '''$PPIDS_RAW'''.strip()
+t1_raw = '''$T1'''.strip()
+t2_raw = '''$T2'''.strip()
+
+ppid_map = {}
+for line in ppid_raw.split('\\\\n'):
+    parts = line.split()
+    if len(parts) >= 2: ppid_map[parts[0]] = parts[1]
+
+def parse_time(s):
+    segs = s.split(':')
+    if len(segs) == 3: return int(segs[0])*3600 + int(segs[1])*60 + float(segs[2])
+    if len(segs) == 2: return int(segs[0])*60 + float(segs[1])
+    return 0
+
+t1, t2 = {}, {}
+for line in t1_raw.split('\\\\n'):
+    parts = line.split()
+    if len(parts) >= 2: t1[parts[0]] = parse_time(parts[1])
+for line in t2_raw.split('\\\\n'):
+    parts = line.split()
+    if len(parts) >= 2: t2[parts[0]] = parse_time(parts[1])
+
+cpu_map = {}
+for pid in t1:
+    if pid in t2:
+        cpu_map[pid] = ((t2[pid] - t1[pid]) / 0.2) * 100
+
+for p in peers:
+    ppid = ppid_map.get(str(p['pid']))
+    cpu = cpu_map.get(ppid, 0) if ppid else 0
+    p['cpu'] = round(cpu, 1)
+    p['parentPid'] = int(ppid) if ppid else None
+    p['isActive'] = cpu > 5
+
+print(json.dumps(peers))
+" 2>/dev/null || echo "$PEERS"
+    `;
+
+    execFile('ssh', ['-o', 'ConnectTimeout=3', '-o', 'StrictHostKeyChecking=no', remote.ssh, 'bash -s'], { timeout: 8000 }, (err, stdout) => {
+      if (err) { resolve([]); return; }
+      try {
+        const peers = JSON.parse(stdout.trim());
+        // Tag each peer with the remote host name
+        resolve(peers.map(p => ({ ...p, host: remote.name })));
+      } catch { resolve([]); }
+    });
+
+    // Feed the script to stdin... actually execFile doesn't support stdin easily.
+    // Let me use a different approach.
+  });
+}
+
+// Simpler approach: use child_process.exec with the script piped via SSH
+function fetchRemotePeersSimple(remote) {
+  return new Promise((resolve) => {
+    const cmd = `ssh -o ConnectTimeout=3 -o StrictHostKeyChecking=no ${remote.ssh} "curl -sf -X POST http://127.0.0.1:${remote.brokerPort}/list-peers -H 'Content-Type: application/json' -d '{\\\"scope\\\":\\\"machine\\\"}' 2>/dev/null || echo '[]'"`;
+    require('child_process').exec(cmd, { timeout: 6000 }, (err, stdout) => {
+      if (err) { resolve([]); return; }
+      try {
+        const peers = JSON.parse(stdout.trim());
+        if (!Array.isArray(peers)) { resolve([]); return; }
+        // Tag with host, mark activity via last_seen recency (no CPU sampling for remote)
+        const now = Date.now();
+        resolve(peers.map(p => {
+          const lastSeen = new Date(p.last_seen).getTime();
+          const seenAgo = now - lastSeen;
+          return { ...p, host: remote.name, cpu: 0, parentPid: null, isActive: seenAgo < 10000 };
+        }));
+      } catch { resolve([]); }
+    });
+  });
+}
+
 function proxyToBroker(reqPath, postBody, res) {
   const options = {
     hostname: BROKER_HOST,
@@ -419,6 +533,26 @@ function proxyToBroker(reqPath, postBody, res) {
 
   proxyReq.write(postBody);
   proxyReq.end();
+}
+
+/**
+ * Send enriched local peers as response, after merging in remote peers.
+ * Remote fetch happens in parallel and is non-blocking (fails gracefully).
+ */
+function sendPeersResponse(res, localPeers) {
+  // Fetch remote peers in parallel
+  const remotePromises = REMOTE_HOSTS.map(r => fetchRemotePeersSimple(r));
+  Promise.all(remotePromises).then(remoteResults => {
+    const remotePeers = remoteResults.flat();
+    // Enrich remote peers with registry (names + colours)
+    const allPeers = enrichWithRegistry([...localPeers, ...remotePeers]);
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify(allPeers));
+  }).catch(() => {
+    // If remote fetch fails, just send local peers
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify(localPeers));
+  });
 }
 
 const server = http.createServer((req, res) => {
@@ -466,12 +600,10 @@ const server = http.createServer((req, res) => {
             if (parentPids.length === 0) {
               const cpuEnriched = peers.map(p => ({ ...p, cpu: 0, isActive: false }));
               enrichWithSessionInfo(cpuEnriched).then(e => enrichWithSupersetData(e)).then(e => enrichWithRegistry(e)).then(enriched => {
-                res.writeHead(200, { 'Content-Type': 'application/json' });
-                res.end(JSON.stringify(enriched));
+                sendPeersResponse(res, enriched);
               }).catch(err => {
                 console.error('Enrichment error:', err);
-                res.writeHead(200, { 'Content-Type': 'application/json' });
-                res.end(JSON.stringify(cpuEnriched));
+                sendPeersResponse(res, cpuEnriched);
               });
               return;
             }
@@ -514,8 +646,7 @@ const server = http.createServer((req, res) => {
                     return { ...p, cpu: Math.round(cpu * 10) / 10, parentPid: ppid ? parseInt(ppid) : null, isActive: cpu > 5 };
                   });
                   enrichWithSessionInfo(cpuEnriched).then(e => enrichWithSupersetData(e)).then(e => enrichWithRegistry(e)).then(enriched => {
-                    res.writeHead(200, { 'Content-Type': 'application/json' });
-                    res.end(JSON.stringify(enriched));
+                    sendPeersResponse(res, enriched);
                   });
                 });
               }, 200);

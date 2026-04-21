@@ -642,11 +642,15 @@
 
         // ---- HELPERS ----
         function isActive(peer) { return !!peer.isActive; }
-        function extractProject(cwd) {
+        function extractProject(cwd, host) {
             var m = cwd.match(/\/proj\/(.+)$/);
-            return m ? m[1] : cwd.split('/').slice(-2).join('/');
+            var proj = m ? m[1] : cwd.split('/').slice(-2).join('/');
+            return host ? host + ':' + proj : proj;
         }
-        function shortProject(cwd) { return extractProject(cwd).split('/').pop(); }
+        function shortProject(cwd, host) {
+            var name = extractProject(cwd).split('/').pop();
+            return host ? host + ':' + name : name;
+        }
         function isWorktree(cwd) { return cwd.indexOf('/worktrees/') !== -1; }
         function extractBranch(cwd) { return isWorktree(cwd) ? cwd.split('/').pop() : 'main'; }
         function formatUptime(ts) {
@@ -981,7 +985,7 @@
 
             // Header
             var header = el('div', 'room-header');
-            header.appendChild(el('span', '', shortProject(agents[0].cwd)));
+            header.appendChild(el('span', '', shortProject(agents[0].cwd, agents[0].host)));
             header.appendChild(el('span', 'room-count', agents.length + ' agent' + (agents.length !== 1 ? 's' : '')));
             room.appendChild(header);
 
@@ -1201,7 +1205,7 @@
                 var id = ids[j];
                 var walk = walkingAgents[id];
                 var peer = walk.peer;
-                var projectKey = extractProject(peer.cwd);
+                var projectKey = extractProject(peer.cwd, peer.host);
 
                 // Find the room body for this project
                 var roomBodies = document.querySelectorAll('.room-body[data-project="' + projectKey + '"]');
@@ -1311,6 +1315,7 @@
             var rows = [
                 ['Name', getAgentName(peer)],
                 ['ID', peer.id],
+                ['Host', peer.host || 'local'],
                 ['Status', active ? 'Working' : 'Sleeping'],
                 ['Project', extractProject(peer.cwd)],
                 ['Branch', extractBranch(peer.cwd)],
@@ -1404,7 +1409,7 @@
             // Group by project
             var projects = {};
             for (var i = 0; i < peers.length; i++) {
-                var key = extractProject(peers[i].cwd);
+                var key = extractProject(peers[i].cwd, peers[i].host);
                 if (!projects[key]) projects[key] = [];
                 projects[key].push(peers[i]);
             }
@@ -1462,7 +1467,7 @@
             for (var j = 0; j < peers.length; j++) {
                 allPeersMap[peers[j].id] = peers[j];
                 if (isActive(peers[j])) activeCount++; else idleCount++;
-                projectSet[extractProject(peers[j].cwd)] = true;
+                projectSet[extractProject(peers[j].cwd, peers[j].host)] = true;
             }
 
             document.getElementById('heroCount').textContent = peers.length;
